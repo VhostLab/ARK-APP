@@ -22,13 +22,9 @@ App de escritorio para **ARK: Survival Evolved** (Windows). / Desktop app for **
 - Kotlin + Compose Multiplatform for Desktop. JDK 21 (Temurin), Gradle wrapper.
 - Ejecutar en desarrollo: `.\gradlew.bat run`
 - Tests: `.\gradlew.bat test`
-- Instalador MSI: `.\gradlew.bat packageMsi` (requiere los binarios de WiX 3.14 en `tools\wix314`, ver abajo)
+- Instalador MSI: `.\gradlew.bat packageMsi` (el plugin de Compose descarga WiX automáticamente)
   - Salida: `build\compose\binaries\main\msi\ARK-APP-<versión>.msi`
-
-### WiX (solo para empaquetar)
-
-jpackage necesita `candle.exe`/`light.exe` de WiX 3.14 en el `PATH`. Descarga
-[wix314-binaries.zip](https://github.com/wixtoolset/wix3/releases/tag/wix3141rtm) y extráelo en `tools\wix314`, o instala WiX Toolset 3.14 en el sistema.
+  - El MSI es per-user (sin UAC), con acceso directo en escritorio y menú Inicio, y JRE incluido.
 
 ## Ideas v2
 
