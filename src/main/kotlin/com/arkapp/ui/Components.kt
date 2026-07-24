@@ -12,8 +12,8 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.filled.Close
-import androidx.compose.material.icons.filled.Error
 import androidx.compose.material.icons.filled.Info
+import androidx.compose.material.icons.filled.Warning
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
@@ -105,7 +105,7 @@ fun StatusMessage(text: String, isError: Boolean, onDismiss: () -> Unit) {
             verticalAlignment = Alignment.CenterVertically,
         ) {
             Icon(
-                if (isError) Icons.Default.Error else Icons.Default.CheckCircle,
+                if (isError) Icons.Default.Warning else Icons.Default.CheckCircle,
                 contentDescription = null,
                 tint = color,
                 modifier = Modifier.size(18.dp),

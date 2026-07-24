@@ -13,7 +13,7 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.CheckCircle
-import androidx.compose.material.icons.filled.Error
+import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Warning
 import androidx.compose.material3.FilterChip
 import androidx.compose.material3.Icon
@@ -168,7 +168,7 @@ private fun PathCard(
         Spacer(Modifier.size(8.dp))
         Row(verticalAlignment = Alignment.CenterVertically) {
             Icon(
-                if (valid) Icons.Default.CheckCircle else Icons.Default.Error,
+                if (valid) Icons.Default.CheckCircle else Icons.Default.Close,
                 contentDescription = if (valid) strings.setDetectedOk else strings.setNotFound,
                 tint = if (valid) SuccessGreen else MaterialTheme.colorScheme.error,
                 modifier = Modifier.size(18.dp),

@@ -9,7 +9,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Description
+import androidx.compose.material.icons.automirrored.filled.List
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material.icons.filled.Star
 import androidx.compose.material3.Icon
@@ -91,7 +91,7 @@ fun App(state: AppState) {
                     }
                     TabRow(selectedTabIndex = selectedTab, containerColor = Color.Transparent) {
                         AppTab(strings.tabFavorites, Icons.Default.Star, selectedTab == 0) { selectedTab = 0 }
-                        AppTab(strings.tabProfiles, Icons.Default.Description, selectedTab == 1) { selectedTab = 1 }
+                        AppTab(strings.tabProfiles, Icons.AutoMirrored.Filled.List, selectedTab == 1) { selectedTab = 1 }
                         AppTab(strings.tabSettings, Icons.Default.Settings, selectedTab == 2) { selectedTab = 2 }
                     }
                     when (selectedTab) {

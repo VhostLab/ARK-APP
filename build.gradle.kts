@@ -8,7 +8,7 @@ plugins {
 }
 
 group = "com.arkapp"
-version = "1.0.3"
+version = "1.0.4"
 
 kotlin {
     jvmToolchain(21)
@@ -17,7 +17,8 @@ kotlin {
 dependencies {
     implementation(compose.desktop.currentOs)
     implementation(compose.material3)
-    implementation(compose.materialIconsExtended)
+    // Core icon set only (~50 icons); the extended artifact is 75 MB of classes
+    implementation("org.jetbrains.compose.material:material-icons-core:1.7.3")
     implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.9.0")
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-swing:1.10.2")
     testImplementation(kotlin("test"))
@@ -30,10 +31,22 @@ tasks.test {
 compose.desktop {
     application {
         mainClass = "com.arkapp.MainKt"
+        // Without -Xmx the JVM claims up to 25% of physical RAM (8 GB on a 32 GB
+        // machine) and never gives it back. SerialGC + free ratios shrink the
+        // committed heap after each GC.
+        jvmArgs += listOf(
+            "-Xms32m",
+            "-Xmx256m",
+            "-XX:+UseSerialGC",
+            "-XX:MaxHeapFreeRatio=40",
+            "-XX:MinHeapFreeRatio=15",
+            "-XX:ReservedCodeCacheSize=48m",
+            "-XX:TieredStopAtLevel=1",
+        )
         nativeDistributions {
             targetFormats(TargetFormat.Msi)
             packageName = "ARK-APP"
-            packageVersion = "1.0.3"
+            packageVersion = "1.0.4"
             modules("java.instrument", "jdk.unsupported")
             description = "Steam server favorites & INI profile manager for ARK: Survival Evolved"
             vendor = "Aimar"
