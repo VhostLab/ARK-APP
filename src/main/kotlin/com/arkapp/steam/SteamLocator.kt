@@ -36,9 +36,11 @@ class SteamLocator(private val settings: SettingsStore) {
         if (Files.isRegularFile(loginUsers)) {
             runCatching {
                 val users = Vdf.parse(Files.readString(loginUsers)).obj("users")
-                val entry = users?.entries?.firstOrNull { (_, v) ->
-                    (v as? VdfObject)?.string("MostRecent") == "1"
-                } ?: users?.entries?.firstOrNull()
+                    ?.entries?.mapNotNull { (k, v) -> (v as? VdfObject)?.let { k to it } }
+                // MostRecent when present; newer Steam builds omit it, so fall
+                // back to the latest login Timestamp instead of file order.
+                val entry = users?.firstOrNull { it.second.string("MostRecent") == "1" }
+                    ?: users?.maxByOrNull { it.second.string("Timestamp")?.toLongOrNull() ?: 0L }
                 entry?.first?.toLongOrNull()?.let { return (it - STEAM64_BASE).toString() }
             }
         }
@@ -54,6 +56,21 @@ class SteamLocator(private val settings: SettingsStore) {
                     .orElse(null)
             }
         }.getOrNull()
+    }
+
+    /** accountid → Steam display name (PersonaName), from config/loginusers.vdf. */
+    fun accountNames(): Map<String, String> {
+        val loginUsers = steamRoot()?.resolve("config/loginusers.vdf") ?: return emptyMap()
+        if (!Files.isRegularFile(loginUsers)) return emptyMap()
+        return runCatching {
+            val users = Vdf.parse(Files.readString(loginUsers)).obj("users") ?: return emptyMap()
+            users.entries.mapNotNull { (steam64, v) ->
+                val obj = v as? VdfObject ?: return@mapNotNull null
+                val accountId = steam64.toLongOrNull()?.minus(STEAM64_BASE)?.toString() ?: return@mapNotNull null
+                val name = obj.string("PersonaName") ?: obj.string("AccountName") ?: return@mapNotNull null
+                accountId to name
+            }.toMap()
+        }.getOrDefault(emptyMap())
     }
 
     fun availableAccountIds(): List<String> {

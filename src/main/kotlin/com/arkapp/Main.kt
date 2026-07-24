@@ -19,7 +19,7 @@ private fun runApp() = application {
     val state = remember { AppState() }
     Window(
         onCloseRequest = ::exitApplication,
-        title = "ARK-APP",
+        title = "Prodigiosos App",
         icon = painterResource("icon.png"),
         state = rememberWindowState(width = 1000.dp, height = 700.dp),
     ) {

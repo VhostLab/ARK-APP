@@ -3,7 +3,7 @@ package com.arkapp.i18n
 import androidx.compose.runtime.compositionLocalOf
 
 interface Strings {
-    val appTitle: String get() = "ARK-APP"
+    val appTitle: String get() = "Prodigiosos App"
     val tabFavorites: String
     val tabProfiles: String
     val tabSettings: String

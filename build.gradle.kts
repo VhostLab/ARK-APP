@@ -8,7 +8,7 @@ plugins {
 }
 
 group = "com.arkapp"
-version = "1.0.4"
+version = "1.0.5"
 
 kotlin {
     jvmToolchain(21)
@@ -45,15 +45,15 @@ compose.desktop {
         )
         nativeDistributions {
             targetFormats(TargetFormat.Msi)
-            packageName = "ARK-APP"
-            packageVersion = "1.0.4"
+            packageName = "Prodigiosos App"
+            packageVersion = "1.0.5"
             modules("java.instrument", "jdk.unsupported")
             description = "Steam server favorites & INI profile manager for ARK: Survival Evolved"
             vendor = "Aimar"
             windows {
                 iconFile.set(project.file("packaging/icon.ico"))
                 menu = true
-                menuGroup = "ARK-APP"
+                menuGroup = "Prodigiosos App"
                 shortcut = true
                 perUserInstall = true
                 dirChooser = false

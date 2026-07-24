@@ -1,5 +1,5 @@
 # Generates icon.png (window icon) and multi-resolution icon.ico (installer)
-# Dark rounded square, cyan "A" monogram with an amber accent triangle.
+# Dark rounded square, cyan "P" monogram with an amber accent triangle.
 Add-Type -AssemblyName System.Drawing
 
 $outDir = $PSScriptRoot
@@ -48,7 +48,7 @@ function New-IconBitmap([int]$size) {
     $fmt.Alignment = [System.Drawing.StringAlignment]::Center
     $fmt.LineAlignment = [System.Drawing.StringAlignment]::Center
     $textRect = New-Object System.Drawing.RectangleF(0, ($size * 0.02), ($size * 0.9), $size)
-    $g.DrawString("A", $font, $cyan, $textRect, $fmt)
+    $g.DrawString("P", $font, $cyan, $textRect, $fmt)
 
     $g.Dispose()
     return $bmp

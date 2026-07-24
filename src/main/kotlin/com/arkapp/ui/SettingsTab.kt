@@ -48,6 +48,7 @@ fun SettingsTab(state: AppState) {
     val arkRoot = remember(settings) { state.arkLocator.arkRoot() }
     val accountId = remember(settings) { state.steamLocator.accountId() }
     val accounts = remember(settings) { state.steamLocator.availableAccountIds() }
+    val accountNames = remember(settings) { state.steamLocator.accountNames() }
     val currentLanguage = settings.language ?: systemLanguage()
 
     Column(
@@ -128,10 +129,17 @@ fun SettingsTab(state: AppState) {
             Spacer(Modifier.size(8.dp))
             Row(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.CenterVertically) {
                 accounts.forEach { id ->
+                    val name = accountNames[id]
                     FilterChip(
                         selected = id == accountId,
                         onClick = { state.settings.update { it.copy(steamAccountId = id) } },
-                        label = { Text(id, fontFamily = FontFamily.Monospace) },
+                        label = {
+                            if (name != null) {
+                                Text("$name · $id")
+                            } else {
+                                Text(id, fontFamily = FontFamily.Monospace)
+                            }
+                        },
                     )
                 }
                 if (accounts.isEmpty()) {

@@ -1,4 +1,4 @@
-# ARK-APP
+# Prodigiosos App
 
 App de escritorio para **ARK: Survival Evolved** (Windows). / Desktop app for **ARK: Survival Evolved** (Windows).
 
