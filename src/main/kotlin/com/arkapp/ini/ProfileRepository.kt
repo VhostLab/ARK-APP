@@ -65,6 +65,10 @@ class ProfileRepository(
     fun createProfile(name: String, content: String): ProfileMeta =
         newProfile(name) { dir -> Files.writeString(dir.resolve(FILE_NAME), content) }
 
+    /** Byte-exact copy of any external file into the app's folder; the source is never touched. */
+    fun importFile(name: String, source: Path): ProfileMeta =
+        newProfile(name) { dir -> Files.copy(source, dir.resolve(FILE_NAME)) }
+
     fun readContent(profile: ProfileMeta): String =
         readTextLenient(paths.profiles.resolve(profile.id).resolve(FILE_NAME))
 

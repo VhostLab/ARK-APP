@@ -7,8 +7,15 @@ import androidx.compose.ui.window.Window
 import androidx.compose.ui.window.application
 import androidx.compose.ui.window.rememberWindowState
 import com.arkapp.ui.App
+import javax.swing.UIManager
 
-fun main() = application {
+fun main() {
+    // Swing dialogs (folder pickers) follow the Windows look instead of Metal
+    runCatching { UIManager.setLookAndFeel(UIManager.getSystemLookAndFeelClassName()) }
+    runApp()
+}
+
+private fun runApp() = application {
     val state = remember { AppState() }
     Window(
         onCloseRequest = ::exitApplication,

@@ -49,13 +49,13 @@ import com.arkapp.steam.SteamProcess
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
+import java.awt.FileDialog
+import java.awt.Frame
 import java.nio.file.AccessDeniedException
 import java.nio.file.Path
 import java.time.Instant
 import java.time.ZoneId
 import java.time.format.DateTimeFormatter
-import javax.swing.JFileChooser
-import javax.swing.filechooser.FileNameExtensionFilter
 
 private val dateFormat = DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm")
 
@@ -79,6 +79,7 @@ fun ProfilesTab(state: AppState) {
     var confirmApply by remember { mutableStateOf<ProfileRepository.ProfileMeta?>(null) }
     var confirmDelete by remember { mutableStateOf<ProfileRepository.ProfileMeta?>(null) }
     var editor by remember { mutableStateOf<EditorState?>(null) }
+    var importPending by remember { mutableStateOf<Pair<Path, String>?>(null) }
 
     val arkOk = remember(settings) { state.arkLocator.arkRoot() != null }
 
@@ -237,16 +238,7 @@ fun ProfilesTab(state: AppState) {
                     enabled = !busy,
                     onClick = {
                         pickIniFile(strings.profImport)?.let { picked ->
-                            runGuarded {
-                                val content = withContext(Dispatchers.IO) {
-                                    ProfileRepository.readTextLenient(picked)
-                                }
-                                editor = EditorState(
-                                    profileId = null,
-                                    name = picked.fileName.toString().removeSuffix(".ini"),
-                                    content = content,
-                                )
-                            }
+                            importPending = picked to picked.fileName.toString().removeSuffix(".ini")
                         }
                     },
                 ) { Text(strings.profImport) }
@@ -366,6 +358,47 @@ fun ProfilesTab(state: AppState) {
         }
     }
 
+    importPending?.let { (sourcePath, importName) ->
+        androidx.compose.material3.AlertDialog(
+            onDismissRequest = { importPending = null },
+            title = { Text(strings.profImport) },
+            text = {
+                Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                    Text(
+                        sourcePath.toString(),
+                        style = MaterialTheme.typography.bodySmall,
+                        fontFamily = FontFamily.Monospace,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                    OutlinedTextField(
+                        value = importName,
+                        onValueChange = { importPending = sourcePath to it },
+                        placeholder = { Text(strings.profNamePlaceholder) },
+                        singleLine = true,
+                        modifier = Modifier.fillMaxWidth(),
+                    )
+                }
+            },
+            confirmButton = {
+                Button(
+                    enabled = importName.isNotBlank() && !busy,
+                    onClick = {
+                        val name = importName.trim()
+                        importPending = null
+                        runGuarded {
+                            withContext(Dispatchers.IO) { state.profiles.importFile(name, sourcePath) }
+                            message = strings.profSavedOk(name) to false
+                            refresh()
+                        }
+                    },
+                ) { Text(strings.profSave) }
+            },
+            dismissButton = {
+                TextButton(onClick = { importPending = null }) { Text(strings.cancel) }
+            },
+        )
+    }
+
     confirmApply?.let { profile ->
         ConfirmDialog(
             title = strings.profApplyConfirmTitle,
@@ -399,14 +432,12 @@ fun ProfilesTab(state: AppState) {
     }
 }
 
+/** Native Windows open-file dialog (AWT FileDialog, not the Swing one). */
 private fun pickIniFile(title: String): Path? {
-    val chooser = JFileChooser().apply {
-        dialogTitle = title
-        fileSelectionMode = JFileChooser.FILES_ONLY
-        fileFilter = FileNameExtensionFilter("INI", "ini")
-        isAcceptAllFileFilterUsed = true
-    }
-    return if (chooser.showOpenDialog(null) == JFileChooser.APPROVE_OPTION) {
-        chooser.selectedFile.toPath()
-    } else null
+    val parent = Frame.getFrames().firstOrNull { it.isVisible }
+    val dialog = FileDialog(parent, title, FileDialog.LOAD)
+    dialog.file = "*.ini"
+    dialog.isVisible = true
+    val file = dialog.file ?: return null
+    return Path.of(dialog.directory, file)
 }
