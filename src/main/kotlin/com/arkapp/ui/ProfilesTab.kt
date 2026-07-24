@@ -11,13 +11,17 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Delete
+import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.Warning
 import androidx.compose.material3.Button
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
+import androidx.compose.material3.LocalTextStyle
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
@@ -34,8 +38,10 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import com.arkapp.AppState
 import com.arkapp.i18n.LocalStrings
 import com.arkapp.ini.ProfileRepository
@@ -44,11 +50,20 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import java.nio.file.AccessDeniedException
+import java.nio.file.Path
 import java.time.Instant
 import java.time.ZoneId
 import java.time.format.DateTimeFormatter
+import javax.swing.JFileChooser
+import javax.swing.filechooser.FileNameExtensionFilter
 
 private val dateFormat = DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm")
+
+private data class EditorState(
+    val profileId: String?,   // null = creating a new profile
+    val name: String,
+    val content: String,
+)
 
 @Composable
 fun ProfilesTab(state: AppState) {
@@ -63,6 +78,7 @@ fun ProfilesTab(state: AppState) {
     var message by remember { mutableStateOf<Pair<String, Boolean>?>(null) }
     var confirmApply by remember { mutableStateOf<ProfileRepository.ProfileMeta?>(null) }
     var confirmDelete by remember { mutableStateOf<ProfileRepository.ProfileMeta?>(null) }
+    var editor by remember { mutableStateOf<EditorState?>(null) }
 
     val arkOk = remember(settings) { state.arkLocator.arkRoot() != null }
 
@@ -115,6 +131,57 @@ fun ProfilesTab(state: AppState) {
         }
     }
 
+    editor?.let { ed ->
+        Column(
+            Modifier.fillMaxSize().padding(20.dp),
+            verticalArrangement = Arrangement.spacedBy(12.dp),
+        ) {
+            message?.let { (text, isError) -> StatusMessage(text, isError) { message = null } }
+            Text(
+                strings.profEditorTitle,
+                style = MaterialTheme.typography.titleMedium,
+                fontWeight = FontWeight.SemiBold,
+            )
+            OutlinedTextField(
+                value = ed.name,
+                onValueChange = { editor = ed.copy(name = it) },
+                placeholder = { Text(strings.profNamePlaceholder) },
+                singleLine = true,
+                modifier = Modifier.fillMaxWidth(),
+            )
+            OutlinedTextField(
+                value = ed.content,
+                onValueChange = { editor = ed.copy(content = it) },
+                placeholder = { Text(strings.profEditorContentPlaceholder) },
+                textStyle = LocalTextStyle.current.copy(fontFamily = FontFamily.Monospace, fontSize = 13.sp),
+                modifier = Modifier.weight(1f).fillMaxWidth(),
+            )
+            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                Button(
+                    enabled = ed.name.isNotBlank() && !busy,
+                    onClick = {
+                        val name = ed.name.trim()
+                        runGuarded {
+                            withContext(Dispatchers.IO) {
+                                val existing = ed.profileId?.let { id -> profilesList.firstOrNull { it.id == id } }
+                                if (existing == null) {
+                                    state.profiles.createProfile(name, ed.content)
+                                } else {
+                                    state.profiles.updateProfile(existing, name, ed.content)
+                                }
+                            }
+                            message = strings.profSavedOk(name) to false
+                            editor = null
+                            refresh()
+                        }
+                    },
+                ) { Text(strings.profSave) }
+                TextButton(onClick = { editor = null }) { Text(strings.cancel) }
+            }
+        }
+        return
+    }
+
     Column(
         Modifier.fillMaxSize().padding(20.dp),
         verticalArrangement = Arrangement.spacedBy(16.dp),
@@ -135,7 +202,13 @@ fun ProfilesTab(state: AppState) {
             )
         }
 
-        SectionCard(strings.profSaveCurrentTitle) {
+        SectionCard(strings.profNewTitle) {
+            Text(
+                strings.profNewHelp,
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+            Spacer(Modifier.size(12.dp))
             Row(verticalAlignment = Alignment.CenterVertically) {
                 OutlinedTextField(
                     value = nameText,
@@ -156,7 +229,31 @@ fun ProfilesTab(state: AppState) {
                             refresh()
                         }
                     },
-                ) { Text(strings.profSave) }
+                ) { Text(strings.profSaveCurrent) }
+            }
+            Spacer(Modifier.size(8.dp))
+            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                OutlinedButton(
+                    enabled = !busy,
+                    onClick = {
+                        pickIniFile(strings.profImport)?.let { picked ->
+                            runGuarded {
+                                val content = withContext(Dispatchers.IO) {
+                                    ProfileRepository.readTextLenient(picked)
+                                }
+                                editor = EditorState(
+                                    profileId = null,
+                                    name = picked.fileName.toString().removeSuffix(".ini"),
+                                    content = content,
+                                )
+                            }
+                        }
+                    },
+                ) { Text(strings.profImport) }
+                OutlinedButton(
+                    enabled = !busy,
+                    onClick = { editor = EditorState(profileId = null, name = "", content = "") },
+                ) { Text(strings.profCreateNew) }
             }
         }
 
@@ -214,6 +311,24 @@ fun ProfilesTab(state: AppState) {
                                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                                     )
                                 }
+                                IconButton(
+                                    enabled = !busy,
+                                    onClick = {
+                                        runGuarded {
+                                            val content = withContext(Dispatchers.IO) {
+                                                state.profiles.readContent(profile)
+                                            }
+                                            editor = EditorState(profile.id, profile.name, content)
+                                        }
+                                    },
+                                ) {
+                                    Icon(
+                                        Icons.Default.Edit,
+                                        contentDescription = strings.profEdit,
+                                        modifier = Modifier.size(18.dp),
+                                    )
+                                }
+                                Spacer(Modifier.width(4.dp))
                                 if (isActive) {
                                     OutlinedButton(
                                         enabled = !busy && arkOk,
@@ -282,4 +397,16 @@ fun ProfilesTab(state: AppState) {
             onDismiss = { confirmDelete = null },
         )
     }
+}
+
+private fun pickIniFile(title: String): Path? {
+    val chooser = JFileChooser().apply {
+        dialogTitle = title
+        fileSelectionMode = JFileChooser.FILES_ONLY
+        fileFilter = FileNameExtensionFilter("INI", "ini")
+        isAcceptAllFileFilterUsed = true
+    }
+    return if (chooser.showOpenDialog(null) == JFileChooser.APPROVE_OPTION) {
+        chooser.selectedFile.toPath()
+    } else null
 }

@@ -6,8 +6,8 @@ App de escritorio para **ARK: Survival Evolved** (Windows). / Desktop app for **
 
 - **Favoritos de Steam**: pega una lista de servidores (aunque esté desordenada: nombres, comas, listas de Discord…), revisa la vista previa y añádelos a los favoritos del navegador de servidores de Steam para que aparezcan en el filtro "Favoritos" de ARK.
   *Steam Favorites: paste a messy server list, review the preview and add them to Steam's server browser favorites so they show up in ARK's "Favorites" filter.*
-- **Perfiles INI**: guarda varias versiones de `GameUserSettings.ini` + `BaseDeviceProfiles.ini` y alterna entre ellas con copia de seguridad automática.
-  *INI Profiles: store multiple versions of both files and switch between them with automatic backups.*
+- **Perfiles INI**: guarda varias versiones de `BaseDeviceProfiles.ini` y alterna entre ellas con copia de seguridad automática. Puedes guardar el archivo actual del juego, importar un archivo descargado (con cualquier nombre) o crear/editar perfiles en un editor de texto integrado — al aplicar, siempre se copia al juego como `BaseDeviceProfiles.ini`.
+  *INI Profiles: store multiple versions of `BaseDeviceProfiles.ini` and switch between them with automatic backups. Snapshot the game's current file, import a downloaded file (any name) or create/edit profiles in a built-in text editor — on apply it is always copied to the game as `BaseDeviceProfiles.ini`.*
 - UI en español e inglés. / *Spanish and English UI.*
 
 ## Notas importantes / Important notes
@@ -16,6 +16,7 @@ App de escritorio para **ARK: Survival Evolved** (Windows). / Desktop app for **
 - La dirección de un servidor usa el **puerto de consulta** (normalmente 27015+), no el puerto de juego 7777.
 - Steam restaura `BaseDeviceProfiles.ini` al verificar la integridad o actualizar el juego → botón **Reaplicar**.
 - Datos de la app en `%APPDATA%\ARK-APP` (perfiles, copias de seguridad y ajustes).
+- El `BaseDeviceProfiles.ini` del juego vive en `<ARK>\Engine\Config\`.
 
 ## Desarrollo / Development
 

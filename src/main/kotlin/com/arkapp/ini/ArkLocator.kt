@@ -37,9 +37,6 @@ class ArkLocator(private val steam: SteamLocator, private val settings: Settings
     fun isValidArkRoot(p: Path?): Boolean =
         p != null && Files.isDirectory(p.resolve("ShooterGame")) && Files.isDirectory(p.resolve("Engine/Config"))
 
-    fun gameUserSettings(): Path? =
-        arkRoot()?.resolve("ShooterGame/Saved/Config/WindowsNoEditor/GameUserSettings.ini")
-
     fun baseDeviceProfiles(): Path? =
         arkRoot()?.resolve("Engine/Config/BaseDeviceProfiles.ini")
 }

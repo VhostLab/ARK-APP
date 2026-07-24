@@ -38,7 +38,14 @@ interface Strings {
     val steamStartReminder: String
 
     // Profiles
-    val profSaveCurrentTitle: String
+    val profNewTitle: String
+    val profNewHelp: String
+    val profSaveCurrent: String
+    val profImport: String
+    val profCreateNew: String
+    val profEdit: String
+    val profEditorTitle: String
+    val profEditorContentPlaceholder: String
     val profNamePlaceholder: String
     val profSave: String
     val profListTitle: String
@@ -122,11 +129,19 @@ object EsStrings : Strings {
     override val steamCloseTimeout = "Steam no se ha cerrado a tiempo. Ciérralo manualmente e inténtalo de nuevo."
     override val steamStartReminder = "Hecho. Inicia Steam y comprueba Ver → Servidores → Favoritos."
 
-    override val profSaveCurrentTitle = "Guardar configuración actual"
+    override val profNewTitle = "Nuevo perfil"
+    override val profNewHelp =
+        "Guarda el archivo actual del juego con un nombre, crea uno desde cero o importa un archivo descargado. Se guardará siempre como BaseDeviceProfiles.ini."
+    override val profSaveCurrent = "Guardar el actual"
+    override val profImport = "Importar archivo…"
+    override val profCreateNew = "Crear nuevo"
+    override val profEdit = "Editar"
+    override val profEditorTitle = "Editor de BaseDeviceProfiles.ini"
+    override val profEditorContentPlaceholder = "Contenido del archivo…"
     override val profNamePlaceholder = "Nombre del perfil"
     override val profSave = "Guardar"
     override val profListTitle = "Perfiles guardados"
-    override val profEmpty = "No hay perfiles todavía. Guarda la configuración actual para crear el primero."
+    override val profEmpty = "No hay perfiles todavía. Guarda el actual, crea uno nuevo o importa un archivo."
     override val profApply = "Aplicar"
     override val profReapply = "Reaplicar"
     override val profDelete = "Eliminar"
@@ -134,7 +149,7 @@ object EsStrings : Strings {
     override val profActiveModified = "Activo (modificado)"
     override val profApplyConfirmTitle = "Aplicar perfil"
     override fun profApplyConfirmBody(name: String) =
-        "Se sobrescribirán GameUserSettings.ini y BaseDeviceProfiles.ini con los del perfil \"$name\". Antes se hará una copia de seguridad de los archivos actuales."
+        "Se sobrescribirá el BaseDeviceProfiles.ini del juego con el del perfil \"$name\". Antes se hará una copia de seguridad del actual."
     override val profDeleteConfirmTitle = "Eliminar perfil"
     override fun profDeleteConfirmBody(name: String) = "¿Eliminar el perfil \"$name\"? Esta acción no se puede deshacer."
     override val profArkRunning = "ARK está en ejecución. Ciérralo antes de aplicar un perfil (el juego sobrescribe sus ini al salir)."
@@ -147,7 +162,7 @@ object EsStrings : Strings {
     override val profRestoredOk = "Copia de seguridad restaurada."
     override val profNoBackup = "No hay copias de seguridad."
     override val profArkNotFound = "No se ha encontrado la instalación de ARK. Configúrala en Ajustes."
-    override val profFilesMissing = "No se han encontrado los archivos ini del juego. ¿Has ejecutado ARK al menos una vez?"
+    override val profFilesMissing = "No se ha encontrado el BaseDeviceProfiles.ini del juego."
 
     override val setLanguage = "Idioma"
     override val setSteamPath = "Carpeta de Steam"
@@ -207,11 +222,19 @@ object EnStrings : Strings {
     override val steamCloseTimeout = "Steam did not close in time. Close it manually and try again."
     override val steamStartReminder = "Done. Start Steam and check View → Game Servers → Favorites."
 
-    override val profSaveCurrentTitle = "Save current configuration"
+    override val profNewTitle = "New profile"
+    override val profNewHelp =
+        "Save the game's current file under a name, create one from scratch or import a downloaded file. It is always stored as BaseDeviceProfiles.ini."
+    override val profSaveCurrent = "Save current"
+    override val profImport = "Import file…"
+    override val profCreateNew = "Create new"
+    override val profEdit = "Edit"
+    override val profEditorTitle = "BaseDeviceProfiles.ini editor"
+    override val profEditorContentPlaceholder = "File content…"
     override val profNamePlaceholder = "Profile name"
     override val profSave = "Save"
     override val profListTitle = "Saved profiles"
-    override val profEmpty = "No profiles yet. Save the current configuration to create the first one."
+    override val profEmpty = "No profiles yet. Save the current one, create a new one or import a file."
     override val profApply = "Apply"
     override val profReapply = "Reapply"
     override val profDelete = "Delete"
@@ -219,7 +242,7 @@ object EnStrings : Strings {
     override val profActiveModified = "Active (modified)"
     override val profApplyConfirmTitle = "Apply profile"
     override fun profApplyConfirmBody(name: String) =
-        "GameUserSettings.ini and BaseDeviceProfiles.ini will be overwritten with the ones from profile \"$name\". A backup of the current files will be made first."
+        "The game's BaseDeviceProfiles.ini will be overwritten with the one from profile \"$name\". A backup of the current file will be made first."
     override val profDeleteConfirmTitle = "Delete profile"
     override fun profDeleteConfirmBody(name: String) = "Delete profile \"$name\"? This cannot be undone."
     override val profArkRunning = "ARK is running. Close it before applying a profile (the game rewrites its ini files on exit)."
@@ -232,7 +255,7 @@ object EnStrings : Strings {
     override val profRestoredOk = "Backup restored."
     override val profNoBackup = "No backups available."
     override val profArkNotFound = "ARK installation not found. Configure it in Settings."
-    override val profFilesMissing = "The game's ini files were not found. Have you run ARK at least once?"
+    override val profFilesMissing = "The game's BaseDeviceProfiles.ini was not found."
 
     override val setLanguage = "Language"
     override val setSteamPath = "Steam folder"
