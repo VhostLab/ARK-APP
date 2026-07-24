@@ -8,7 +8,7 @@ plugins {
 }
 
 group = "com.arkapp"
-version = "1.0.5"
+version = "1.0.6"
 
 kotlin {
     jvmToolchain(21)
@@ -46,7 +46,7 @@ compose.desktop {
         nativeDistributions {
             targetFormats(TargetFormat.Msi)
             packageName = "Prodigiosos App"
-            packageVersion = "1.0.5"
+            packageVersion = "1.0.6"
             modules("java.instrument", "jdk.unsupported")
             description = "Steam server favorites & INI profile manager for ARK: Survival Evolved"
             vendor = "Aimar"

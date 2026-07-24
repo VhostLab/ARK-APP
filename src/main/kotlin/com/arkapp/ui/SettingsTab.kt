@@ -150,6 +150,13 @@ fun SettingsTab(state: AppState) {
                     )
                 }
             }
+            Spacer(Modifier.size(4.dp))
+            val pinned = settings.steamAccountId != null
+            Text(
+                if (pinned) strings.setAccountPinned else strings.setAccountAuto,
+                style = MaterialTheme.typography.bodySmall,
+                color = if (pinned) SuccessGreen else MaterialTheme.colorScheme.onSurfaceVariant,
+            )
             TextButton(onClick = { state.settings.update { it.copy(steamAccountId = null) } }) {
                 Text(strings.setAutoDetect)
             }

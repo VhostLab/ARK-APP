@@ -76,6 +76,8 @@ interface Strings {
     val setArkPath: String
     val setAccount: String
     val setAccountHelp: String
+    val setAccountPinned: String
+    val setAccountAuto: String
     val setBrowse: String
     val setAutoDetect: String
     val setDetectedOk: String
@@ -167,8 +169,11 @@ object EsStrings : Strings {
     override val setLanguage = "Idioma"
     override val setSteamPath = "Carpeta de Steam"
     override val setArkPath = "Carpeta de ARK"
-    override val setAccount = "Cuenta de Steam (accountid)"
-    override val setAccountHelp = "Se detecta automáticamente desde la última sesión de Steam. Cámbiala solo si usas varias cuentas."
+    override val setAccount = "Cuenta de Steam"
+    override val setAccountHelp =
+        "Haz clic en una cuenta para fijarla como predeterminada: los favoritos se guardarán siempre en ella. \"Detectar automáticamente\" vuelve a usar la última sesión de Steam."
+    override val setAccountPinned = "Cuenta fijada — se usará siempre esta."
+    override val setAccountAuto = "Detección automática (última sesión de Steam)."
     override val setBrowse = "Examinar…"
     override val setAutoDetect = "Detectar automáticamente"
     override val setDetectedOk = "Detectado"
@@ -260,8 +265,11 @@ object EnStrings : Strings {
     override val setLanguage = "Language"
     override val setSteamPath = "Steam folder"
     override val setArkPath = "ARK folder"
-    override val setAccount = "Steam account (accountid)"
-    override val setAccountHelp = "Auto-detected from the last Steam session. Change it only if you use multiple accounts."
+    override val setAccount = "Steam account"
+    override val setAccountHelp =
+        "Click an account to pin it as the default: favorites will always be saved to it. \"Auto-detect\" goes back to using the last Steam session."
+    override val setAccountPinned = "Account pinned — this one will always be used."
+    override val setAccountAuto = "Auto-detected (last Steam session)."
     override val setBrowse = "Browse…"
     override val setAutoDetect = "Auto-detect"
     override val setDetectedOk = "Detected"
