@@ -10,9 +10,12 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.List
+import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material.icons.filled.Star
+import androidx.compose.material3.Button
 import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Tab
@@ -21,10 +24,12 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.darkColorScheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -37,7 +42,13 @@ import com.arkapp.i18n.EnStrings
 import com.arkapp.i18n.EsStrings
 import com.arkapp.i18n.LocalStrings
 import com.arkapp.i18n.Strings
+import com.arkapp.update.UpdateChecker
+import com.arkapp.update.UpdateInfo
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import java.util.Locale
+import kotlin.system.exitProcess
 
 private val DarkColors = darkColorScheme(
     primary = Color(0xFF4DD0E1),
@@ -68,6 +79,13 @@ fun App(state: AppState) {
         mutableStateOf(initial ?: if (arkDetectedAtStart) 0 else 2)
     }
 
+    val scope = rememberCoroutineScope()
+    var update by remember { mutableStateOf<UpdateInfo?>(null) }
+    var updating by remember { mutableStateOf(false) }
+    LaunchedEffect(Unit) {
+        update = withContext(Dispatchers.IO) { UpdateChecker.check() }
+    }
+
     CompositionLocalProvider(LocalStrings provides strings) {
         MaterialTheme(colorScheme = DarkColors) {
             Surface(Modifier.fillMaxSize(), color = MaterialTheme.colorScheme.background) {
@@ -88,6 +106,42 @@ fun App(state: AppState) {
                             style = MaterialTheme.typography.bodySmall,
                             color = MaterialTheme.colorScheme.onSurfaceVariant,
                         )
+                    }
+                    update?.let { info ->
+                        Surface(color = MaterialTheme.colorScheme.primary.copy(alpha = 0.12f)) {
+                            Row(
+                                Modifier.fillMaxWidth().padding(horizontal = 20.dp, vertical = 6.dp),
+                                verticalAlignment = Alignment.CenterVertically,
+                            ) {
+                                Text(
+                                    strings.updateAvailable(info.version),
+                                    style = MaterialTheme.typography.bodyMedium,
+                                    modifier = Modifier.weight(1f),
+                                )
+                                Button(
+                                    enabled = !updating,
+                                    onClick = {
+                                        updating = true
+                                        scope.launch {
+                                            val launched = withContext(Dispatchers.IO) {
+                                                UpdateChecker.downloadAndLaunchInstaller(info)
+                                            }
+                                            if (launched) {
+                                                exitProcess(0)
+                                            } else {
+                                                UpdateChecker.openReleasesPage()
+                                                updating = false
+                                            }
+                                        }
+                                    },
+                                ) {
+                                    Text(if (updating) strings.updateDownloading else strings.updateInstall)
+                                }
+                                IconButton(enabled = !updating, onClick = { update = null }) {
+                                    Icon(Icons.Default.Close, contentDescription = null, modifier = Modifier.size(16.dp))
+                                }
+                            }
+                        }
                     }
                     TabRow(selectedTabIndex = selectedTab, containerColor = Color.Transparent) {
                         AppTab(strings.tabFavorites, Icons.Default.Star, selectedTab == 0) { selectedTab = 0 }

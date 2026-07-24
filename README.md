@@ -2,6 +2,13 @@
 
 App de escritorio para **ARK: Survival Evolved** (Windows). / Desktop app for **ARK: Survival Evolved** (Windows).
 
+## Descarga / Download
+
+**[Descargar la última versión (MSI) / Download the latest release](https://github.com/VhostLab/ARK-APP/releases/latest)**
+
+Desde la v1.0.7 la app comprueba actualizaciones al arrancar y ofrece instalarlas con un clic.
+*Since v1.0.7 the app checks for updates on startup and offers to install them in one click.*
+
 ## Funciones / Features
 
 - **Favoritos de Steam**: pega una lista de servidores (aunque esté desordenada: nombres, comas, listas de Discord…), revisa la vista previa y añádelos a los favoritos del navegador de servidores de Steam para que aparezcan en el filtro "Favoritos" de ARK.
@@ -24,7 +31,7 @@ App de escritorio para **ARK: Survival Evolved** (Windows). / Desktop app for **
 - Ejecutar en desarrollo: `.\gradlew.bat run`
 - Tests: `.\gradlew.bat test`
 - Instalador MSI: `.\gradlew.bat packageMsi` (el plugin de Compose descarga WiX automáticamente)
-  - Salida: `build\compose\binaries\main\msi\ARK-APP-<versión>.msi`
+  - Salida: `build\compose\binaries\main\msi\Prodigiosos App-<versión>.msi`
   - El MSI es per-user (sin UAC), con acceso directo en escritorio y menú Inicio, y JRE incluido.
 
 ## Ideas v2

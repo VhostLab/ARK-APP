@@ -15,7 +15,6 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Warning
-import androidx.compose.material3.FilterChip
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
@@ -46,9 +45,6 @@ fun SettingsTab(state: AppState) {
     val steamRoot = remember(settings) { state.steamLocator.steamRoot() }
     val steamValid = remember(settings) { state.steamLocator.isValidSteamRoot(steamRoot) }
     val arkRoot = remember(settings) { state.arkLocator.arkRoot() }
-    val accountId = remember(settings) { state.steamLocator.accountId() }
-    val accounts = remember(settings) { state.steamLocator.availableAccountIds() }
-    val accountNames = remember(settings) { state.steamLocator.accountNames() }
     val currentLanguage = settings.language ?: systemLanguage()
 
     Column(
@@ -120,47 +116,6 @@ fun SettingsTab(state: AppState) {
             onAutoDetect = { state.settings.update { it.copy(arkPath = null) } },
         )
 
-        SectionCard(strings.setAccount) {
-            Text(
-                strings.setAccountHelp,
-                style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-            )
-            Spacer(Modifier.size(8.dp))
-            Row(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.CenterVertically) {
-                accounts.forEach { id ->
-                    val name = accountNames[id]
-                    FilterChip(
-                        selected = id == accountId,
-                        onClick = { state.settings.update { it.copy(steamAccountId = id) } },
-                        label = {
-                            if (name != null) {
-                                Text("$name · $id")
-                            } else {
-                                Text(id, fontFamily = FontFamily.Monospace)
-                            }
-                        },
-                    )
-                }
-                if (accounts.isEmpty()) {
-                    Text(
-                        strings.setNotFound,
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = MaterialTheme.colorScheme.error,
-                    )
-                }
-            }
-            Spacer(Modifier.size(4.dp))
-            val pinned = settings.steamAccountId != null
-            Text(
-                if (pinned) strings.setAccountPinned else strings.setAccountAuto,
-                style = MaterialTheme.typography.bodySmall,
-                color = if (pinned) SuccessGreen else MaterialTheme.colorScheme.onSurfaceVariant,
-            )
-            TextButton(onClick = { state.settings.update { it.copy(steamAccountId = null) } }) {
-                Text(strings.setAutoDetect)
-            }
-        }
     }
 }
 

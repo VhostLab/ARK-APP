@@ -88,6 +88,11 @@ interface Strings {
     val firstRunTitle: String
     val firstRunBody: String
 
+    // Updates
+    fun updateAvailable(version: String): String
+    val updateInstall: String
+    val updateDownloading: String
+
     // Common
     val cancel: String
     val ok: String
@@ -184,6 +189,10 @@ object EsStrings : Strings {
     override val firstRunTitle = "Configuración inicial"
     override val firstRunBody = "No se ha podido localizar la instalación de ARK automáticamente. Selecciona la carpeta manualmente."
 
+    override fun updateAvailable(version: String) = "Nueva versión $version disponible."
+    override val updateInstall = "Descargar e instalar"
+    override val updateDownloading = "Descargando…"
+
     override val cancel = "Cancelar"
     override val ok = "Aceptar"
     override val errorAccessDenied =
@@ -279,6 +288,10 @@ object EnStrings : Strings {
     override val setArkFolderHelp = "The ARK install folder (the one containing \"ShooterGame\")."
     override val firstRunTitle = "Initial setup"
     override val firstRunBody = "The ARK installation could not be located automatically. Select the folder manually."
+
+    override fun updateAvailable(version: String) = "New version $version available."
+    override val updateInstall = "Download and install"
+    override val updateDownloading = "Downloading…"
 
     override val cancel = "Cancel"
     override val ok = "OK"

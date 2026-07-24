@@ -21,6 +21,7 @@ import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.Checkbox
 import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.FilterChip
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -30,6 +31,7 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -57,6 +59,11 @@ import java.nio.file.AccessDeniedException
 fun FavoritesTab(state: AppState) {
     val strings = LocalStrings.current
     val scope = rememberCoroutineScope()
+    val settings by state.settings.state.collectAsState()
+
+    val accountId = remember(settings) { state.steamLocator.accountId() }
+    val accounts = remember(settings) { state.steamLocator.availableAccountIds() }
+    val accountNames = remember(settings) { state.steamLocator.accountNames() }
 
     var pasteText by remember { mutableStateOf("") }
     var parseResult by remember { mutableStateOf<ServerParseResult?>(null) }
@@ -139,6 +146,48 @@ fun FavoritesTab(state: AppState) {
         verticalArrangement = Arrangement.spacedBy(16.dp),
     ) {
         message?.let { (text, isError) -> StatusMessage(text, isError) { message = null } }
+
+        SectionCard {
+            Row(
+                Modifier.fillMaxWidth(),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(10.dp),
+            ) {
+                Text(
+                    strings.setAccount,
+                    style = MaterialTheme.typography.titleSmall,
+                    fontWeight = FontWeight.SemiBold,
+                )
+                accounts.forEach { id ->
+                    val name = accountNames[id]
+                    FilterChip(
+                        selected = id == accountId,
+                        onClick = { state.settings.update { it.copy(steamAccountId = id) } },
+                        label = {
+                            if (name != null) Text("$name · $id")
+                            else Text(id, fontFamily = FontFamily.Monospace)
+                        },
+                    )
+                }
+                if (accounts.isEmpty()) {
+                    Text(
+                        strings.setNotFound,
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.error,
+                    )
+                }
+                Spacer(Modifier.weight(1f))
+                val pinned = settings.steamAccountId != null
+                Text(
+                    if (pinned) strings.setAccountPinned else strings.setAccountAuto,
+                    style = MaterialTheme.typography.bodySmall,
+                    color = if (pinned) SuccessGreen else MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+                TextButton(onClick = { state.settings.update { it.copy(steamAccountId = null) } }) {
+                    Text(strings.setAutoDetect)
+                }
+            }
+        }
 
         Row(Modifier.weight(1f), horizontalArrangement = Arrangement.spacedBy(20.dp)) {
             // Left: paste → detect → preview → add
