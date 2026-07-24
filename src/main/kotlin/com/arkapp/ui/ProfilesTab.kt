@@ -93,6 +93,8 @@ fun ProfilesTab(state: AppState) {
             busy = true
             try {
                 block()
+            } catch (e: kotlinx.coroutines.CancellationException) {
+                throw e
             } catch (e: Exception) {
                 message = mapError(e) to true
             } finally {

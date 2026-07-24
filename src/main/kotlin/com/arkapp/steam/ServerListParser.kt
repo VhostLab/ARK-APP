@@ -26,9 +26,10 @@ object ServerListParser {
         """(?<![\d.])((?:\d{1,3}\.){3}\d{1,3})(?!\.?\d)(?:(\s*:\s*|[\s,]+)(\d{1,5})(?![.\d]))?"""
     )
 
-    // Hostnames only count with an explicit :port, otherwise any word would match.
+    // Hostnames only count with an explicit :port and an alphabetic TLD — otherwise
+    // a name glued to an IP ("Earth65.21.137.238:27027") would read as a domain.
     private val hostPattern = Regex(
-        """\b([a-zA-Z][a-zA-Z0-9-]*(?:\.[a-zA-Z0-9-]+)+)\s*:\s*(\d{1,5})(?![.\d])"""
+        """\b([a-zA-Z][a-zA-Z0-9-]*(?:\.[a-zA-Z0-9-]+)*\.[a-zA-Z]{2,})\s*:\s*(\d{1,5})(?![.\d])"""
     )
 
     private val nameSeparators = Regex("""[-–—|:;,·>*_#\[\]()"'`]+""")
@@ -58,7 +59,7 @@ object ServerListParser {
                 hits += Hit(m.range.first..end, host, port)
             }
             for (m in hostPattern.findAll(line)) {
-                if (hits.any { it.range.first <= m.range.first && m.range.last <= it.range.last }) continue
+                if (hits.any { it.range.first <= m.range.last && m.range.first <= it.range.last }) continue
                 val port = m.groupValues[2].toIntOrNull()?.takeIf { it in 1..65535 } ?: continue
                 hits += Hit(m.range, m.groupValues[1], port)
             }

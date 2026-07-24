@@ -24,11 +24,16 @@ interface Strings {
     val favRemove: String
     val favEmpty: String
     val favNoAccount: String
+    val favSelectAll: String
+    fun favRemoveSelected(n: Int): String
+    val favRemoveConfirmTitle: String
+    fun favRemoveConfirmBody(n: Int): String
     fun favAddedResult(added: Int, skipped: Int): String
     fun favRemovedResult(n: Int): String
     val steamRunningTitle: String
     val steamRunningBody: String
     val steamCloseAndContinue: String
+    val steamClosingWait: String
     val steamCloseTimeout: String
     val steamStartReminder: String
 
@@ -101,6 +106,11 @@ object EsStrings : Strings {
     override val favRemove = "Eliminar"
     override val favEmpty = "No hay favoritos guardados."
     override val favNoAccount = "No se ha podido determinar la cuenta de Steam. Revísala en Ajustes."
+    override val favSelectAll = "Seleccionar todo"
+    override fun favRemoveSelected(n: Int) = "Eliminar seleccionados ($n)"
+    override val favRemoveConfirmTitle = "Eliminar favoritos"
+    override fun favRemoveConfirmBody(n: Int) =
+        if (n == 1) "¿Eliminar 1 servidor de favoritos?" else "¿Eliminar $n servidores de favoritos?"
     override fun favAddedResult(added: Int, skipped: Int) =
         "Añadidos $added servidores" + (if (skipped > 0) " ($skipped duplicados omitidos)." else ".")
     override fun favRemovedResult(n: Int) = if (n == 1) "1 favorito eliminado." else "$n favoritos eliminados."
@@ -108,6 +118,7 @@ object EsStrings : Strings {
     override val steamRunningBody =
         "Steam sobrescribe la lista de favoritos al cerrarse, así que hay que cerrarlo antes de guardar los cambios."
     override val steamCloseAndContinue = "Cerrar Steam y continuar"
+    override val steamClosingWait = "Cerrando Steam… puedes cancelar si tarda demasiado."
     override val steamCloseTimeout = "Steam no se ha cerrado a tiempo. Ciérralo manualmente e inténtalo de nuevo."
     override val steamStartReminder = "Hecho. Inicia Steam y comprueba Ver → Servidores → Favoritos."
 
@@ -180,6 +191,11 @@ object EnStrings : Strings {
     override val favRemove = "Remove"
     override val favEmpty = "No favorites saved."
     override val favNoAccount = "Could not determine the Steam account. Check it in Settings."
+    override val favSelectAll = "Select all"
+    override fun favRemoveSelected(n: Int) = "Remove selected ($n)"
+    override val favRemoveConfirmTitle = "Remove favorites"
+    override fun favRemoveConfirmBody(n: Int) =
+        if (n == 1) "Remove 1 server from favorites?" else "Remove $n servers from favorites?"
     override fun favAddedResult(added: Int, skipped: Int) =
         "Added $added servers" + (if (skipped > 0) " ($skipped duplicates skipped)." else ".")
     override fun favRemovedResult(n: Int) = if (n == 1) "1 favorite removed." else "$n favorites removed."
@@ -187,6 +203,7 @@ object EnStrings : Strings {
     override val steamRunningBody =
         "Steam overwrites the favorites list when it exits, so it must be closed before saving changes."
     override val steamCloseAndContinue = "Close Steam and continue"
+    override val steamClosingWait = "Closing Steam… you can cancel if it takes too long."
     override val steamCloseTimeout = "Steam did not close in time. Close it manually and try again."
     override val steamStartReminder = "Done. Start Steam and check View → Game Servers → Favorites."
 

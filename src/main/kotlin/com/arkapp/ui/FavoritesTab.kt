@@ -20,6 +20,7 @@ import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.Checkbox
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -45,7 +46,9 @@ import com.arkapp.steam.FavoritesRepository
 import com.arkapp.steam.ServerListParser
 import com.arkapp.steam.ServerParseResult
 import com.arkapp.steam.SteamProcess
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import java.nio.file.AccessDeniedException
@@ -60,14 +63,20 @@ fun FavoritesTab(state: AppState) {
     var checked by remember { mutableStateOf<Set<Int>>(emptySet()) }
     var defaultPortText by remember { mutableStateOf("27015") }
     var favoritesList by remember { mutableStateOf<List<FavoritesRepository.Favorite>>(emptyList()) }
+    var selectedFavs by remember { mutableStateOf<Set<String>>(emptySet()) }
+    var confirmBulkDelete by remember { mutableStateOf(false) }
     var busy by remember { mutableStateOf(false) }
     var message by remember { mutableStateOf<Pair<String, Boolean>?>(null) }
     var steamDialogAction by remember { mutableStateOf<(suspend () -> Unit)?>(null) }
+    var steamWaitJob by remember { mutableStateOf<Job?>(null) }
 
     fun refreshFavorites() {
         scope.launch {
             runCatching { withContext(Dispatchers.IO) { state.favorites.list() } }
-                .onSuccess { favoritesList = it }
+                .onSuccess { list ->
+                    favoritesList = list
+                    selectedFavs = selectedFavs intersect list.map { it.entryKey }.toSet()
+                }
                 .onFailure { message = strings.errorGeneric(it.message ?: it.toString()) to true }
         }
     }
@@ -78,6 +87,8 @@ fun FavoritesTab(state: AppState) {
         busy = true
         try {
             block()
+        } catch (e: CancellationException) {
+            throw e
         } catch (e: AccessDeniedException) {
             message = strings.errorAccessDenied to true
         } catch (e: Exception) {
@@ -113,6 +124,14 @@ fun FavoritesTab(state: AppState) {
         parseResult = null
         checked = emptySet()
         refreshFavorites()
+    }
+
+    fun removeFavorites(keys: Set<String>) {
+        withSteamClosed {
+            val removed = withContext(Dispatchers.IO) { state.favorites.remove(keys) }
+            message = strings.favRemovedResult(removed) to false
+            refreshFavorites()
+        }
     }
 
     Column(
@@ -218,7 +237,7 @@ fun FavoritesTab(state: AppState) {
                 }
             }
 
-            // Right: current favorites
+            // Right: current favorites with multi-select
             SectionCard(modifier = Modifier.weight(1f).fillMaxSize()) {
                 Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
                     Text(
@@ -239,8 +258,18 @@ fun FavoritesTab(state: AppState) {
                         modifier = Modifier.padding(top = 8.dp),
                     )
                 } else {
+                    Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+                        Checkbox(
+                            checked = selectedFavs.size == favoritesList.size,
+                            onCheckedChange = { all ->
+                                selectedFavs =
+                                    if (all) favoritesList.map { it.entryKey }.toSet() else emptySet()
+                            },
+                        )
+                        Text(strings.favSelectAll, style = MaterialTheme.typography.bodyMedium)
+                    }
                     LazyColumn(
-                        Modifier.weight(1f).padding(top = 8.dp),
+                        Modifier.weight(1f).padding(top = 4.dp),
                         verticalArrangement = Arrangement.spacedBy(8.dp),
                     ) {
                         items(favoritesList, key = { it.entryKey + it.address }) { fav ->
@@ -250,9 +279,17 @@ fun FavoritesTab(state: AppState) {
                                 modifier = Modifier.fillMaxWidth(),
                             ) {
                                 Row(
-                                    Modifier.padding(start = 12.dp, top = 6.dp, bottom = 6.dp, end = 4.dp),
+                                    Modifier.padding(start = 4.dp, top = 2.dp, bottom = 2.dp, end = 4.dp),
                                     verticalAlignment = Alignment.CenterVertically,
                                 ) {
+                                    Checkbox(
+                                        checked = fav.entryKey in selectedFavs,
+                                        onCheckedChange = {
+                                            selectedFavs =
+                                                if (it) selectedFavs + fav.entryKey
+                                                else selectedFavs - fav.entryKey
+                                        },
+                                    )
                                     Column(Modifier.weight(1f)) {
                                         Text(fav.name, style = MaterialTheme.typography.bodyMedium)
                                         if (fav.address != fav.name) {
@@ -266,15 +303,7 @@ fun FavoritesTab(state: AppState) {
                                     }
                                     IconButton(
                                         enabled = !busy,
-                                        onClick = {
-                                            withSteamClosed {
-                                                val removed = withContext(Dispatchers.IO) {
-                                                    state.favorites.remove(setOf(fav.entryKey))
-                                                }
-                                                message = strings.favRemovedResult(removed) to false
-                                                refreshFavorites()
-                                            }
-                                        },
+                                        onClick = { removeFavorites(setOf(fav.entryKey)) },
                                     ) {
                                         Icon(
                                             Icons.Default.Delete,
@@ -286,38 +315,87 @@ fun FavoritesTab(state: AppState) {
                             }
                         }
                     }
+                    Spacer(Modifier.size(8.dp))
+                    Button(
+                        enabled = selectedFavs.isNotEmpty() && !busy,
+                        onClick = { confirmBulkDelete = true },
+                    ) { Text(strings.favRemoveSelected(selectedFavs.size)) }
                 }
             }
         }
     }
 
+    if (confirmBulkDelete) {
+        ConfirmDialog(
+            title = strings.favRemoveConfirmTitle,
+            body = strings.favRemoveConfirmBody(selectedFavs.size),
+            confirmLabel = strings.favRemove,
+            dismissLabel = strings.cancel,
+            onConfirm = {
+                confirmBulkDelete = false
+                removeFavorites(selectedFavs)
+            },
+            onDismiss = { confirmBulkDelete = false },
+        )
+    }
+
     steamDialogAction?.let { pendingAction ->
+        val waiting = steamWaitJob != null
         AlertDialog(
-            onDismissRequest = { if (!busy) steamDialogAction = null },
+            onDismissRequest = {
+                steamWaitJob?.cancel()
+                steamWaitJob = null
+                steamDialogAction = null
+            },
             title = { Text(strings.steamRunningTitle) },
-            text = { Text(strings.steamRunningBody) },
+            text = {
+                Column {
+                    Text(strings.steamRunningBody)
+                    if (waiting) {
+                        Spacer(Modifier.size(12.dp))
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            CircularProgressIndicator(Modifier.size(18.dp), strokeWidth = 2.dp)
+                            Spacer(Modifier.width(10.dp))
+                            Text(strings.steamClosingWait, style = MaterialTheme.typography.bodySmall)
+                        }
+                    }
+                }
+            },
             confirmButton = {
                 Button(
-                    enabled = !busy,
+                    enabled = !waiting,
                     onClick = {
-                        scope.launch {
-                            runGuarded {
+                        steamWaitJob = scope.launch {
+                            try {
                                 val root = state.steamLocator.steamRoot()
-                                    ?: throw IllegalStateException(strings.favNoAccount)
+                                if (root == null) {
+                                    message = strings.favNoAccount to true
+                                    steamDialogAction = null
+                                    return@launch
+                                }
                                 withContext(Dispatchers.IO) { SteamProcess.requestSteamShutdown(root) }
                                 if (SteamProcess.awaitSteamExit()) {
-                                    pendingAction()
+                                    steamDialogAction = null
+                                    runGuarded(pendingAction)
                                 } else {
                                     message = strings.steamCloseTimeout to true
+                                    steamDialogAction = null
                                 }
+                            } finally {
+                                steamWaitJob = null
                             }
-                            steamDialogAction = null
                         }
                     },
                 ) { Text(strings.steamCloseAndContinue) }
             },
             dismissButton = {
-                TextButton(enabled = !busy, onClick = { steamDialogAction = null }) { Text(strings.cancel) }
+                TextButton(
+                    onClick = {
+                        steamWaitJob?.cancel()
+                        steamWaitJob = null
+                        steamDialogAction = null
+                    },
+                ) { Text(strings.cancel) }
             },
         )
     }

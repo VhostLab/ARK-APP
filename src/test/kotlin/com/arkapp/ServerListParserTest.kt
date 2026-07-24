@@ -108,6 +108,36 @@ class ServerListParserTest {
     }
 
     @Test
+    fun `real cluster list including names glued to the ip`() {
+        val text = """
+            The Island 65.21.137.238:27015
+            Valguero 65.21.137.238:27029
+            Scorched Earth65.21.137.238:27027
+            Ragnarok 65.21.137.238:27017
+            Lost Island 65.21.137.238:27031
+            Genesis 2 65.21.137.238:27037
+            Genesis 1 65.21.137.238:27025
+            Fjordur 65.21.137.238:27023
+            Extinction 65.21.137.238:27021
+            Crstal Isles 65.21.137.238:27033
+            Aberration 65.21.137.238:27035
+            The Center65.21.137.238:27019
+        """.trimIndent()
+        val result = ServerListParser.parse(text)
+        assertEquals(12, result.servers.size)
+        assertTrue(result.servers.all { it.host == "65.21.137.238" })
+        assertEquals(
+            listOf(27015, 27029, 27027, 27017, 27031, 27037, 27025, 27023, 27021, 27033, 27035, 27019),
+            result.servers.map { it.port },
+        )
+        assertEquals("The Island", result.servers[0].name)
+        assertEquals("Scorched Earth", result.servers[2].name)
+        assertEquals("Genesis 2", result.servers[5].name)
+        assertEquals("The Center", result.servers[11].name)
+        assertEquals(0, result.ignoredLines.size)
+    }
+
+    @Test
     fun `default port fills missing port in address`() {
         val result = ServerListParser.parse("10.0.0.1")
         assertEquals("10.0.0.1:27015", result.servers[0].address(27015))
