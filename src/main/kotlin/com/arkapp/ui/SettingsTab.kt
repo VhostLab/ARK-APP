@@ -116,6 +116,35 @@ fun SettingsTab(state: AppState) {
             onAutoDetect = { state.settings.update { it.copy(arkPath = null) } },
         )
 
+        SectionCard(strings.setWindowTitle) {
+            Text(
+                strings.setWindowHelp,
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+            Spacer(Modifier.size(8.dp))
+            OutlinedButton(
+                onClick = {
+                    state.settings.update {
+                        it.copy(windowWidth = null, windowHeight = null, windowMaximized = false)
+                    }
+                },
+                shape = ButtonShape,
+            ) { Text(strings.setWindowReset) }
+        }
+
+        SectionCard(strings.setupTitle) {
+            Text(
+                strings.setShowSetupAgainHelp,
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+            Spacer(Modifier.size(8.dp))
+            OutlinedButton(
+                onClick = { state.settings.update { it.copy(setupDismissed = false) } },
+                shape = ButtonShape,
+            ) { Text(strings.setShowSetupAgain) }
+        }
     }
 }
 
@@ -153,7 +182,7 @@ private fun PathCard(
         }
         Spacer(Modifier.size(8.dp))
         Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-            OutlinedButton(onClick = onBrowse) { Text(strings.setBrowse) }
+            OutlinedButton(onClick = onBrowse, shape = ButtonShape) { Text(strings.setBrowse) }
             TextButton(onClick = onAutoDetect) { Text(strings.setAutoDetect) }
         }
     }

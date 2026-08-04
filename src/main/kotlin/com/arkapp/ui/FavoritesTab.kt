@@ -1,6 +1,7 @@
 package com.arkapp.ui
 
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -11,20 +12,27 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
-import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.ArrowDropDown
+import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Delete
+import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material.icons.filled.Refresh
+import androidx.compose.material.icons.filled.Star
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Checkbox
 import androidx.compose.material3.CircularProgressIndicator
-import androidx.compose.material3.FilterChip
+import androidx.compose.material3.DropdownMenu
+import androidx.compose.material3.DropdownMenuItem
+import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
@@ -41,16 +49,21 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import com.arkapp.AppState
 import com.arkapp.i18n.LocalStrings
 import com.arkapp.steam.FavoritesRepository
 import com.arkapp.steam.ServerListParser
 import com.arkapp.steam.ServerParseResult
+import com.arkapp.steam.ServerQuery
 import com.arkapp.steam.SteamProcess
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
+import kotlinx.coroutines.async
+import kotlinx.coroutines.awaitAll
+import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import java.nio.file.AccessDeniedException
@@ -76,6 +89,10 @@ fun FavoritesTab(state: AppState) {
     var message by remember { mutableStateOf<Pair<String, Boolean>?>(null) }
     var steamDialogAction by remember { mutableStateOf<(suspend () -> Unit)?>(null) }
     var steamWaitJob by remember { mutableStateOf<Job?>(null) }
+    var accountMenuOpen by remember { mutableStateOf(false) }
+    // A2S_INFO-resolved names: by preview index for detected servers, by entryKey for saved favorites
+    var previewNames by remember { mutableStateOf<Map<Int, String>>(emptyMap()) }
+    var liveNames by remember { mutableStateOf<Map<String, String>>(emptyMap()) }
 
     fun refreshFavorites() {
         scope.launch {
@@ -83,6 +100,22 @@ fun FavoritesTab(state: AppState) {
                 .onSuccess { list ->
                     favoritesList = list
                     selectedFavs = selectedFavs intersect list.map { it.entryKey }.toSet()
+                    state.setupFavoritesDone.value = list.isNotEmpty()
+                    liveNames = emptyMap()
+                    scope.launch(Dispatchers.IO) {
+                        val unnamed = list.filter { it.name.isBlank() || it.name == it.address }
+                        val found = coroutineScope {
+                            unnamed.map { fav ->
+                                async {
+                                    val host = fav.address.substringBeforeLast(':')
+                                    val port = fav.address.substringAfterLast(':').toIntOrNull()
+                                    if (host.isBlank() || port == null) null
+                                    else ServerQuery.queryName(host, port)?.let { fav.entryKey to it }
+                                }
+                            }.awaitAll().filterNotNull().toMap()
+                        }
+                        if (found.isNotEmpty()) liveNames = found
+                    }
                 }
                 .onFailure { message = strings.errorGeneric(it.message ?: it.toString()) to true }
         }
@@ -119,17 +152,21 @@ fun FavoritesTab(state: AppState) {
 
     val doAdd: suspend () -> Unit = doAdd@{
         val result = parseResult ?: return@doAdd
-        val selected = result.servers.filterIndexed { i, _ -> i in checked }
+        val selected = result.servers.withIndex().filter { it.index in checked }
         val (added, skipped) = withContext(Dispatchers.IO) {
             state.favorites.add(
-                selected.map {
-                    FavoritesRepository.NewFavorite(it.name ?: it.address(defaultPort), it.address(defaultPort))
+                selected.map { (i, s) ->
+                    FavoritesRepository.NewFavorite(
+                        s.name ?: previewNames[i] ?: s.address(defaultPort),
+                        s.address(defaultPort),
+                    )
                 }
             )
         }
         message = (strings.favAddedResult(added, skipped) + " " + strings.steamStartReminder) to false
         parseResult = null
         checked = emptySet()
+        previewNames = emptyMap()
         refreshFavorites()
     }
 
@@ -142,83 +179,124 @@ fun FavoritesTab(state: AppState) {
     }
 
     Column(
-        Modifier.fillMaxSize().padding(20.dp),
-        verticalArrangement = Arrangement.spacedBy(16.dp),
+        Modifier.fillMaxSize().padding(horizontal = 20.dp, vertical = 12.dp),
+        verticalArrangement = Arrangement.spacedBy(12.dp),
     ) {
         message?.let { (text, isError) -> StatusMessage(text, isError) { message = null } }
 
-        SectionCard {
-            Row(
-                Modifier.fillMaxWidth(),
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(10.dp),
-            ) {
+        Row(
+            Modifier.fillMaxWidth(),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(10.dp),
+        ) {
+            Text(
+                strings.setAccount,
+                style = MaterialTheme.typography.titleSmall,
+                fontWeight = FontWeight.SemiBold,
+            )
+            if (accounts.isEmpty()) {
                 Text(
-                    strings.setAccount,
-                    style = MaterialTheme.typography.titleSmall,
-                    fontWeight = FontWeight.SemiBold,
+                    strings.setNotFound,
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.error,
                 )
-                accounts.forEach { id ->
-                    val name = accountNames[id]
-                    FilterChip(
-                        selected = id == accountId,
-                        onClick = { state.settings.update { it.copy(steamAccountId = id) } },
-                        label = {
-                            if (name != null) Text("$name · $id")
-                            else Text(id, fontFamily = FontFamily.Monospace)
-                        },
-                    )
+            } else {
+                Box {
+                    OutlinedButton(onClick = { accountMenuOpen = true }, shape = ButtonShape) {
+                        val name = accountId?.let { accountNames[it] }
+                        Text(
+                            when {
+                                accountId == null -> strings.setNotFound
+                                name != null -> "$name · $accountId"
+                                else -> accountId
+                            },
+                            fontFamily = if (name == null) FontFamily.Monospace else null,
+                        )
+                        Icon(Icons.Default.ArrowDropDown, contentDescription = null, modifier = Modifier.size(18.dp))
+                    }
+                    DropdownMenu(expanded = accountMenuOpen, onDismissRequest = { accountMenuOpen = false }) {
+                        accounts.forEach { id ->
+                            val name = accountNames[id]
+                            DropdownMenuItem(
+                                text = {
+                                    if (name != null) Text("$name · $id")
+                                    else Text(id, fontFamily = FontFamily.Monospace)
+                                },
+                                leadingIcon = {
+                                    if (id == accountId) {
+                                        Icon(Icons.Default.Check, contentDescription = null, modifier = Modifier.size(16.dp))
+                                    }
+                                },
+                                onClick = {
+                                    state.settings.update { it.copy(steamAccountId = id) }
+                                    accountMenuOpen = false
+                                },
+                            )
+                        }
+                        HorizontalDivider()
+                        DropdownMenuItem(
+                            text = { Text(strings.setAutoDetect) },
+                            onClick = {
+                                state.settings.update { it.copy(steamAccountId = null) }
+                                accountMenuOpen = false
+                            },
+                        )
+                    }
                 }
-                if (accounts.isEmpty()) {
-                    Text(
-                        strings.setNotFound,
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = MaterialTheme.colorScheme.error,
-                    )
-                }
-                Spacer(Modifier.weight(1f))
                 val pinned = settings.steamAccountId != null
                 Text(
                     if (pinned) strings.setAccountPinned else strings.setAccountAuto,
                     style = MaterialTheme.typography.bodySmall,
                     color = if (pinned) SuccessGreen else MaterialTheme.colorScheme.onSurfaceVariant,
                 )
-                TextButton(onClick = { state.settings.update { it.copy(steamAccountId = null) } }) {
-                    Text(strings.setAutoDetect)
-                }
             }
         }
 
         Row(Modifier.weight(1f), horizontalArrangement = Arrangement.spacedBy(20.dp)) {
             // Left: paste → detect → preview → add
             Column(
-                Modifier.weight(1f).verticalScroll(rememberScrollState()),
-                verticalArrangement = Arrangement.spacedBy(16.dp),
+                Modifier.weight(1f),
+                verticalArrangement = Arrangement.spacedBy(12.dp),
             ) {
                 SectionCard(strings.favPasteTitle) {
-                    InfoBanner(strings.favQueryPortHint, modifier = Modifier.fillMaxWidth())
-                    Spacer(Modifier.size(12.dp))
                     OutlinedTextField(
                         value = pasteText,
                         onValueChange = { pasteText = it },
                         placeholder = { Text(strings.favPasteHint) },
-                        minLines = 6,
-                        maxLines = 10,
+                        minLines = 3,
+                        maxLines = 6,
                         modifier = Modifier.fillMaxWidth(),
                     )
                     Spacer(Modifier.size(12.dp))
                     Button(
                         enabled = pasteText.isNotBlank(),
+                        shape = ButtonShape,
                         onClick = {
                             val result = ServerListParser.parse(pasteText)
                             parseResult = result
                             checked = result.servers.indices.toSet()
+                            previewNames = emptyMap()
+                            val fallbackPort = defaultPort
+                            scope.launch(Dispatchers.IO) {
+                                val found = coroutineScope {
+                                    result.servers.mapIndexed { i, s ->
+                                        async {
+                                            if (s.name != null) null
+                                            else ServerQuery.queryName(s.host, s.port ?: fallbackPort)?.let { i to it }
+                                        }
+                                    }.awaitAll().filterNotNull().toMap()
+                                }
+                                if (found.isNotEmpty()) previewNames = found
+                            }
                         },
                     ) { Text(strings.favAnalyze) }
                 }
 
                 parseResult?.let { result ->
-                    SectionCard(strings.favDetected(result.servers.size)) {
+                    SectionCard(
+                        strings.favDetected(result.servers.size),
+                        modifier = Modifier.weight(1f).fillMaxWidth(),
+                    ) {
                         if (result.ignoredLines.isNotEmpty()) {
                             InfoBanner(
                                 strings.favIgnoredLines(result.ignoredLines.size),
@@ -242,36 +320,40 @@ fun FavoritesTab(state: AppState) {
                                 }
                                 Spacer(Modifier.size(8.dp))
                             }
-                            result.servers.forEachIndexed { index, server ->
-                                Row(
-                                    Modifier.fillMaxWidth(),
-                                    verticalAlignment = Alignment.CenterVertically,
-                                ) {
-                                    Checkbox(
-                                        checked = index in checked,
-                                        onCheckedChange = {
-                                            checked = if (it) checked + index else checked - index
-                                        },
-                                    )
-                                    Column {
-                                        Text(
-                                            server.name ?: server.host,
-                                            style = MaterialTheme.typography.bodyMedium,
-                                            fontWeight = if (server.name != null) FontWeight.Medium else FontWeight.Normal,
+                            LazyColumn(Modifier.weight(1f).fillMaxWidth()) {
+                                itemsIndexed(result.servers) { index, server ->
+                                    Row(
+                                        Modifier.fillMaxWidth(),
+                                        verticalAlignment = Alignment.CenterVertically,
+                                    ) {
+                                        Checkbox(
+                                            checked = index in checked,
+                                            onCheckedChange = {
+                                                checked = if (it) checked + index else checked - index
+                                            },
                                         )
-                                        val portLabel = server.port?.toString()
-                                            ?: "$defaultPort (${strings.favMissingPort})"
-                                        Text(
-                                            "${server.host}:$portLabel",
-                                            style = MaterialTheme.typography.bodySmall,
-                                            fontFamily = FontFamily.Monospace,
-                                            color = MaterialTheme.colorScheme.onSurfaceVariant,
-                                        )
+                                        val resolvedName = server.name ?: previewNames[index]
+                                        Column {
+                                            Text(
+                                                resolvedName ?: server.host,
+                                                style = MaterialTheme.typography.bodyMedium,
+                                                fontWeight = if (resolvedName != null) FontWeight.Medium else FontWeight.Normal,
+                                            )
+                                            val portLabel = server.port?.toString()
+                                                ?: "$defaultPort (${strings.favMissingPort})"
+                                            Text(
+                                                "${server.host}:$portLabel",
+                                                style = MaterialTheme.typography.bodySmall,
+                                                fontFamily = FontFamily.Monospace,
+                                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                            )
+                                        }
                                     }
                                 }
                             }
                             Spacer(Modifier.size(12.dp))
-                            Button(
+                            HorizonButton(
+                                text = strings.favAddSelected(checked.size),
                                 enabled = checked.isNotEmpty() && !busy,
                                 onClick = {
                                     if (state.steamLocator.favoritesFile() == null) {
@@ -280,7 +362,7 @@ fun FavoritesTab(state: AppState) {
                                         withSteamClosed(doAdd)
                                     }
                                 },
-                            ) { Text(strings.favAddSelected(checked.size)) }
+                            )
                         }
                     }
                 }
@@ -289,23 +371,45 @@ fun FavoritesTab(state: AppState) {
             // Right: current favorites with multi-select
             SectionCard(modifier = Modifier.weight(1f).fillMaxSize()) {
                 Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
-                    Text(
-                        strings.favCurrentTitle,
-                        style = MaterialTheme.typography.titleMedium,
-                        fontWeight = FontWeight.SemiBold,
-                        modifier = Modifier.weight(1f),
-                    )
+                    CueTitle(strings.favCurrentTitle, modifier = Modifier.weight(1f))
+                    if (liveNames.isNotEmpty()) {
+                        TextButton(
+                            enabled = !busy,
+                            onClick = {
+                                val names = liveNames
+                                withSteamClosed {
+                                    withContext(Dispatchers.IO) {
+                                        names.forEach { (key, name) -> state.favorites.rename(key, name) }
+                                    }
+                                    message = strings.favNamesSaved(names.size) to false
+                                    refreshFavorites()
+                                }
+                            },
+                        ) { Text(strings.favSaveNames(liveNames.size)) }
+                    }
                     IconButton(onClick = { refreshFavorites() }) {
                         Icon(Icons.Default.Refresh, contentDescription = strings.favRefresh)
                     }
                 }
                 if (favoritesList.isEmpty()) {
-                    Text(
-                        strings.favEmpty,
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        modifier = Modifier.padding(top = 8.dp),
-                    )
+                    Box(Modifier.weight(1f).fillMaxWidth(), contentAlignment = Alignment.Center) {
+                        Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                            Icon(
+                                Icons.Default.Star,
+                                contentDescription = null,
+                                tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.4f),
+                                modifier = Modifier.size(32.dp),
+                            )
+                            Spacer(Modifier.size(10.dp))
+                            Text(
+                                strings.favEmpty,
+                                style = MaterialTheme.typography.bodyMedium,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                textAlign = TextAlign.Center,
+                                modifier = Modifier.padding(horizontal = 24.dp),
+                            )
+                        }
+                    }
                 } else {
                     Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
                         Checkbox(
@@ -323,7 +427,7 @@ fun FavoritesTab(state: AppState) {
                     ) {
                         items(favoritesList, key = { it.entryKey + it.address }) { fav ->
                             Surface(
-                                shape = RoundedCornerShape(10.dp),
+                                shape = RoundedCornerShape(6.dp),
                                 color = MaterialTheme.colorScheme.surfaceVariant,
                                 modifier = Modifier.fillMaxWidth(),
                             ) {
@@ -339,9 +443,16 @@ fun FavoritesTab(state: AppState) {
                                                 else selectedFavs - fav.entryKey
                                         },
                                     )
+                                    val displayName =
+                                        if (fav.name.isNotBlank() && fav.name != fav.address) fav.name
+                                        else liveNames[fav.entryKey] ?: fav.address
                                     Column(Modifier.weight(1f)) {
-                                        Text(fav.name, style = MaterialTheme.typography.bodyMedium)
-                                        if (fav.address != fav.name) {
+                                        Text(
+                                            displayName,
+                                            style = MaterialTheme.typography.bodyMedium,
+                                            fontFamily = if (displayName == fav.address) FontFamily.Monospace else null,
+                                        )
+                                        if (fav.address != displayName) {
                                             Text(
                                                 fav.address,
                                                 style = MaterialTheme.typography.bodySmall,
@@ -349,6 +460,25 @@ fun FavoritesTab(state: AppState) {
                                                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                                             )
                                         }
+                                    }
+                                    IconButton(
+                                        enabled = !busy,
+                                        onClick = {
+                                            scope.launch {
+                                                val ok = withContext(Dispatchers.IO) {
+                                                    SteamProcess.launchConnect(state.steamLocator.steamRoot(), fav.address)
+                                                }
+                                                message =
+                                                    (if (ok) strings.favConnectLaunched else strings.favConnectFailed) to !ok
+                                            }
+                                        },
+                                    ) {
+                                        Icon(
+                                            Icons.Default.PlayArrow,
+                                            contentDescription = strings.favConnect,
+                                            tint = MaterialTheme.colorScheme.primary,
+                                            modifier = Modifier.size(20.dp),
+                                        )
                                     }
                                     IconButton(
                                         enabled = !busy,
@@ -367,6 +497,11 @@ fun FavoritesTab(state: AppState) {
                     Spacer(Modifier.size(8.dp))
                     Button(
                         enabled = selectedFavs.isNotEmpty() && !busy,
+                        shape = ButtonShape,
+                        colors = ButtonDefaults.buttonColors(
+                            containerColor = MaterialTheme.colorScheme.error,
+                            contentColor = MaterialTheme.colorScheme.onError,
+                        ),
                         onClick = { confirmBulkDelete = true },
                     ) { Text(strings.favRemoveSelected(selectedFavs.size)) }
                 }

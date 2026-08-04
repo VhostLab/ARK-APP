@@ -43,6 +43,53 @@ class ServerListParserTest {
     }
 
     @Test
+    fun `web panel format with name on previous line and Copy IP noise`() {
+        val text = """
+            3/6 Man
+            Aberration
+            141.98.157.231:27015
+            Copy IP
+            Crystal Isles 1
+            141.98.157.231:27016
+            Copy IP
+            Genesis 2
+            141.98.157.233:27016
+            Copy IP
+            MESA Boss Map
+            141.98.157.188:27020
+            Copy IP
+        """.trimIndent()
+        val result = ServerListParser.parse(text)
+        assertEquals(4, result.servers.size)
+
+        assertEquals("Aberration", result.servers[0].name)
+        assertEquals("141.98.157.231", result.servers[0].host)
+        assertEquals(27015, result.servers[0].port)
+
+        assertEquals("Crystal Isles 1", result.servers[1].name)
+        assertEquals(27016, result.servers[1].port)
+
+        assertEquals("Genesis 2", result.servers[2].name)
+        assertEquals("141.98.157.233", result.servers[2].host)
+
+        assertEquals("MESA Boss Map", result.servers[3].name)
+        assertEquals(27020, result.servers[3].port)
+    }
+
+    @Test
+    fun `pending name is not reused for a second address line`() {
+        val text = """
+            Mi servidor
+            1.2.3.4:27015
+            1.2.3.4:27016
+        """.trimIndent()
+        val result = ServerListParser.parse(text)
+        assertEquals(2, result.servers.size)
+        assertEquals("Mi servidor", result.servers[0].name)
+        assertNull(result.servers[1].name)
+    }
+
+    @Test
     fun `multiple addresses in one line get no name`() {
         val result = ServerListParser.parse("cluster: 1.2.3.4:27015 1.2.3.4:27017")
         assertEquals(2, result.servers.size)

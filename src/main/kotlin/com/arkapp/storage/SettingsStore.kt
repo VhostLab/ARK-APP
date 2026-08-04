@@ -15,6 +15,10 @@ data class AppSettings(
     val arkPath: String? = null,
     val steamAccountId: String? = null,
     val activeProfileId: String? = null,
+    val setupDismissed: Boolean = false,
+    val windowWidth: Int? = null,
+    val windowHeight: Int? = null,
+    val windowMaximized: Boolean = false,
 )
 
 class SettingsStore(private val file: Path) {

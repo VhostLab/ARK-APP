@@ -61,6 +61,21 @@ class FavoritesRepository(private val fileProvider: () -> Path?) {
         return added to (servers.size - added)
     }
 
+    /** Rewrites the display name of one favorite. Steam must be closed (same as add/remove). */
+    fun rename(entryKey: String, newName: String): Boolean {
+        val file = fileProvider() ?: return false
+        if (!Files.isRegularFile(file)) return false
+        val root = Vdf.parse(Files.readString(file))
+        val favs = root.obj("Filters")?.obj("Favorites") ?: return false
+        val entry = favs.entries.firstOrNull { it.first == entryKey }?.second as? VdfObject ?: return false
+        val name = newName.trim().ifBlank { entry.string("address").orEmpty() }
+        val idx = entry.entries.indexOfFirst { it.first == "name" }
+        if (idx >= 0) entry.entries[idx] = "name" to VdfString(name)
+        else entry.entries.add(0, "name" to VdfString(name))
+        save(file, root)
+        return true
+    }
+
     fun remove(entryKeys: Set<String>): Int {
         val file = fileProvider() ?: return 0
         if (!Files.isRegularFile(file)) return 0

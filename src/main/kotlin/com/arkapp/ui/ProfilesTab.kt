@@ -1,6 +1,7 @@
 package com.arkapp.ui
 
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -15,6 +16,7 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.List
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.Warning
@@ -40,6 +42,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.arkapp.AppState
@@ -92,6 +95,7 @@ fun ProfilesTab(state: AppState) {
             }.let { (list, active) ->
                 profilesList = list
                 activeState = active
+                state.setupProfileDone.value = active != null
             }
         }
     }
@@ -138,11 +142,7 @@ fun ProfilesTab(state: AppState) {
             verticalArrangement = Arrangement.spacedBy(12.dp),
         ) {
             message?.let { (text, isError) -> StatusMessage(text, isError) { message = null } }
-            Text(
-                strings.profEditorTitle,
-                style = MaterialTheme.typography.titleMedium,
-                fontWeight = FontWeight.SemiBold,
-            )
+            CueTitle(strings.profEditorTitle)
             OutlinedTextField(
                 value = ed.name,
                 onValueChange = { editor = ed.copy(name = it) },
@@ -160,6 +160,7 @@ fun ProfilesTab(state: AppState) {
             Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                 Button(
                     enabled = ed.name.isNotBlank() && !busy,
+                    shape = ButtonShape,
                     onClick = {
                         val name = ed.name.trim()
                         runGuarded {
@@ -189,11 +190,6 @@ fun ProfilesTab(state: AppState) {
     ) {
         message?.let { (text, isError) -> StatusMessage(text, isError) { message = null } }
 
-        InfoBanner(
-            strings.profIntegrityWarning,
-            icon = Icons.Default.Warning,
-            modifier = Modifier.fillMaxWidth(),
-        )
         if (!arkOk) {
             InfoBanner(
                 strings.profArkNotFound,
@@ -221,6 +217,7 @@ fun ProfilesTab(state: AppState) {
                 Spacer(Modifier.width(12.dp))
                 Button(
                     enabled = nameText.isNotBlank() && !busy && arkOk,
+                    shape = ButtonShape,
                     onClick = {
                         val name = nameText.trim()
                         runGuarded {
@@ -236,6 +233,7 @@ fun ProfilesTab(state: AppState) {
             Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                 OutlinedButton(
                     enabled = !busy,
+                    shape = ButtonShape,
                     onClick = {
                         pickIniFile(strings.profImport)?.let { picked ->
                             importPending = picked to picked.fileName.toString().removeSuffix(".ini")
@@ -244,6 +242,7 @@ fun ProfilesTab(state: AppState) {
                 ) { Text(strings.profImport) }
                 OutlinedButton(
                     enabled = !busy,
+                    shape = ButtonShape,
                     onClick = { editor = EditorState(profileId = null, name = "", content = "") },
                 ) { Text(strings.profCreateNew) }
             }
@@ -251,11 +250,24 @@ fun ProfilesTab(state: AppState) {
 
         SectionCard(strings.profListTitle, modifier = Modifier.weight(1f).fillMaxWidth()) {
             if (profilesList.isEmpty()) {
-                Text(
-                    strings.profEmpty,
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                )
+                Box(Modifier.weight(1f).fillMaxWidth(), contentAlignment = Alignment.Center) {
+                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                        Icon(
+                            Icons.AutoMirrored.Filled.List,
+                            contentDescription = null,
+                            tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.4f),
+                            modifier = Modifier.size(28.dp),
+                        )
+                        Spacer(Modifier.size(8.dp))
+                        Text(
+                            strings.profEmpty,
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            textAlign = TextAlign.Center,
+                            modifier = Modifier.padding(horizontal = 24.dp),
+                        )
+                    }
+                }
             } else {
                 LazyColumn(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(8.dp)) {
                     items(profilesList, key = { it.id }) { profile ->
@@ -266,7 +278,7 @@ fun ProfilesTab(state: AppState) {
                             else -> null
                         }
                         Surface(
-                            shape = RoundedCornerShape(10.dp),
+                            shape = RoundedCornerShape(6.dp),
                             color = MaterialTheme.colorScheme.surfaceVariant,
                             modifier = Modifier.fillMaxWidth(),
                         ) {
@@ -324,13 +336,15 @@ fun ProfilesTab(state: AppState) {
                                 if (isActive) {
                                     OutlinedButton(
                                         enabled = !busy && arkOk,
+                                        shape = ButtonShape,
                                         onClick = { applyProfile(profile) },
                                     ) { Text(strings.profReapply) }
                                 } else {
-                                    Button(
+                                    HorizonButton(
+                                        text = strings.profApply,
                                         enabled = !busy && arkOk,
                                         onClick = { confirmApply = profile },
-                                    ) { Text(strings.profApply) }
+                                    )
                                 }
                                 Spacer(Modifier.width(4.dp))
                                 IconButton(enabled = !busy, onClick = { confirmDelete = profile }) {

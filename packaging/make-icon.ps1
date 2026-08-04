@@ -1,55 +1,27 @@
 # Generates icon.png (window icon) and multi-resolution icon.ico (installer)
-# Dark rounded square, cyan "P" monogram with an amber accent triangle.
+# from packaging/logo.png (golden turtle logo, transparent background).
 Add-Type -AssemblyName System.Drawing
 
 $outDir = $PSScriptRoot
+$logoPath = Join-Path $outDir "logo.png"
+if (-not (Test-Path $logoPath)) { throw "packaging/logo.png not found" }
 $sizes = 16, 32, 48, 64, 128, 256
+
+$src = [System.Drawing.Bitmap]::FromFile($logoPath)
 
 function New-IconBitmap([int]$size) {
     $bmp = New-Object System.Drawing.Bitmap($size, $size)
     $g = [System.Drawing.Graphics]::FromImage($bmp)
+    $g.InterpolationMode = [System.Drawing.Drawing2D.InterpolationMode]::HighQualityBicubic
     $g.SmoothingMode = [System.Drawing.Drawing2D.SmoothingMode]::AntiAlias
-    $g.TextRenderingHint = [System.Drawing.Text.TextRenderingHint]::AntiAlias
+    $g.PixelOffsetMode = [System.Drawing.Drawing2D.PixelOffsetMode]::HighQuality
     $g.Clear([System.Drawing.Color]::Transparent)
-
-    # Rounded dark background
-    $radius = [Math]::Max(2, [int]($size * 0.18))
-    $rect = New-Object System.Drawing.Rectangle(0, 0, $size, $size)
-    $path = New-Object System.Drawing.Drawing2D.GraphicsPath
-    $d = $radius * 2
-    $path.AddArc($rect.X, $rect.Y, $d, $d, 180, 90)
-    $path.AddArc($rect.Right - $d, $rect.Y, $d, $d, 270, 90)
-    $path.AddArc($rect.Right - $d, $rect.Bottom - $d, $d, $d, 0, 90)
-    $path.AddArc($rect.X, $rect.Bottom - $d, $d, $d, 90, 90)
-    $path.CloseFigure()
-
-    $bgBrush = New-Object System.Drawing.Drawing2D.LinearGradientBrush(
-        $rect,
-        [System.Drawing.Color]::FromArgb(255, 16, 26, 30),
-        [System.Drawing.Color]::FromArgb(255, 10, 16, 18),
-        [System.Drawing.Drawing2D.LinearGradientMode]::Vertical)
-    $g.FillPath($bgBrush, $path)
-
-    # Amber accent triangle (bottom-right, like a mountain/tooth)
-    $t = $size * 0.06
-    $tri = @(
-        (New-Object System.Drawing.PointF(($size * 0.58), ($size * 0.82))),
-        (New-Object System.Drawing.PointF(($size * 0.78), ($size * 0.52))),
-        (New-Object System.Drawing.PointF(($size * 0.95), ($size * 0.82)))
-    )
-    $amber = New-Object System.Drawing.SolidBrush([System.Drawing.Color]::FromArgb(230, 255, 183, 77))
-    $g.FillPolygon($amber, $tri)
-
-    # Cyan "A"
-    $fontSize = [Math]::Max(6, [single]($size * 0.62))
-    $font = New-Object System.Drawing.Font("Segoe UI", $fontSize, [System.Drawing.FontStyle]::Bold, [System.Drawing.GraphicsUnit]::Pixel)
-    $cyan = New-Object System.Drawing.SolidBrush([System.Drawing.Color]::FromArgb(255, 77, 208, 225))
-    $fmt = New-Object System.Drawing.StringFormat
-    $fmt.Alignment = [System.Drawing.StringAlignment]::Center
-    $fmt.LineAlignment = [System.Drawing.StringAlignment]::Center
-    $textRect = New-Object System.Drawing.RectangleF(0, ($size * 0.02), ($size * 0.9), $size)
-    $g.DrawString("P", $font, $cyan, $textRect, $fmt)
-
+    $scale = [Math]::Min($size / $src.Width, $size / $src.Height)
+    $w = [int][Math]::Round($src.Width * $scale)
+    $h = [int][Math]::Round($src.Height * $scale)
+    $x = [int](($size - $w) / 2)
+    $y = [int](($size - $h) / 2)
+    $g.DrawImage($src, $x, $y, $w, $h)
     $g.Dispose()
     return $bmp
 }
@@ -57,6 +29,7 @@ function New-IconBitmap([int]$size) {
 # PNG for the window icon (256px)
 $png256 = New-IconBitmap 256
 $png256.Save((Join-Path $outDir "..\src\main\resources\icon.png"), [System.Drawing.Imaging.ImageFormat]::Png)
+$png256.Dispose()
 
 # Multi-resolution ICO with PNG-compressed entries
 $pngBlobs = @()
@@ -67,6 +40,7 @@ foreach ($s in $sizes) {
     $pngBlobs += , @($s, $ms.ToArray())
     $bmp.Dispose()
 }
+$src.Dispose()
 
 $icoPath = Join-Path $outDir "icon.ico"
 $fs = [System.IO.File]::Create($icoPath)
@@ -90,4 +64,4 @@ foreach ($entry in $pngBlobs) {
 foreach ($entry in $pngBlobs) { $w.Write($entry[1]) }
 $w.Close()
 
-"icon.png and icon.ico generated"
+"icon.png and icon.ico generated from logo.png"

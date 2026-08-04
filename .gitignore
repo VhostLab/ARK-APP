@@ -5,3 +5,5 @@ tools/
 *.iml
 local.properties
 .kotlin/
+.impeccable/*
+!.impeccable/approved.json

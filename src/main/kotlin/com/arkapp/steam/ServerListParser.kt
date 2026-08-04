@@ -39,6 +39,10 @@ object ServerListParser {
         val servers = mutableListOf<ParsedServer>()
         val seen = mutableSetOf<String>()
         val ignored = mutableListOf<String>()
+        // Web panels list the name on its own line above the address
+        // ("Aberration" ↵ "1.2.3.4:27015" ↵ "Copy IP"): remember the last
+        // addressless line and use it for the next single-address line.
+        var pendingName: String? = null
 
         for (rawLine in text.lines()) {
             val line = rawLine.trim()
@@ -66,10 +70,13 @@ object ServerListParser {
 
             if (hits.isEmpty()) {
                 ignored += line
+                pendingName = cleanName(line)
                 continue
             }
 
-            val name = if (hits.size == 1) extractName(line, hits.single().range) else null
+            val inlineName = if (hits.size == 1) extractName(line, hits.single().range) else null
+            val name = inlineName ?: if (hits.size == 1) pendingName else null
+            pendingName = null
             for (hit in hits) {
                 val key = "${hit.host.lowercase()}:${hit.port ?: -1}"
                 if (!seen.add(key)) continue
@@ -81,12 +88,15 @@ object ServerListParser {
 
     private fun extractName(line: String, serverRange: IntRange): String? {
         val leftover = line.removeRange(serverRange.first..minOf(serverRange.last, line.length - 1))
-        val cleaned = leftover
-            .replace(nameSeparators, " ")
-            .replace(Regex("""\s+"""), " ")
-            .trim()
-        return cleaned.takeIf { it.isNotEmpty() }?.take(MAX_NAME_LENGTH)
+        return cleanName(leftover)
     }
+
+    private fun cleanName(text: String): String? = text
+        .replace(nameSeparators, " ")
+        .replace(Regex("""\s+"""), " ")
+        .trim()
+        .takeIf { it.isNotEmpty() }
+        ?.take(MAX_NAME_LENGTH)
 
     private fun isValidIp(ip: String): Boolean =
         ip.split('.').all { val n = it.toIntOrNull(); n != null && n in 0..255 }

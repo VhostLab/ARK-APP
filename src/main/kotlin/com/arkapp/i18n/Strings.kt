@@ -11,7 +11,6 @@ interface Strings {
     // Favorites
     val favPasteTitle: String
     val favPasteHint: String
-    val favQueryPortHint: String
     val favAnalyze: String
     fun favDetected(n: Int): String
     fun favIgnoredLines(n: Int): String
@@ -22,6 +21,11 @@ interface Strings {
     val favCurrentTitle: String
     val favRefresh: String
     val favRemove: String
+    val favConnect: String
+    val favConnectLaunched: String
+    val favConnectFailed: String
+    fun favSaveNames(n: Int): String
+    fun favNamesSaved(n: Int): String
     val favEmpty: String
     val favNoAccount: String
     val favSelectAll: String
@@ -60,7 +64,6 @@ interface Strings {
     val profDeleteConfirmTitle: String
     fun profDeleteConfirmBody(name: String): String
     val profArkRunning: String
-    val profIntegrityWarning: String
     fun profAppliedOk(name: String): String
     fun profSavedOk(name: String): String
     fun profDeletedOk(name: String): String
@@ -87,11 +90,24 @@ interface Strings {
     val setArkFolderHelp: String
     val firstRunTitle: String
     val firstRunBody: String
+    val setShowSetupAgain: String
+    val setShowSetupAgainHelp: String
+    val setWindowTitle: String
+    val setWindowHelp: String
+    val setWindowReset: String
 
     // Updates
     fun updateAvailable(version: String): String
     val updateInstall: String
     val updateDownloading: String
+
+    // First-run setup checklist
+    val setupTitle: String
+    val setupStepFavorites: String
+    val setupStepProfile: String
+    val setupGoFavorites: String
+    val setupGoProfiles: String
+    val setupAllDone: String
 
     // Common
     val cancel: String
@@ -107,7 +123,6 @@ object EsStrings : Strings {
 
     override val favPasteTitle = "Añadir servidores"
     override val favPasteHint = "Pega aquí tu lista de servidores (vale texto desordenado: nombres, comas, líneas de Discord…)"
-    override val favQueryPortHint = "Usa el puerto de consulta (query port), normalmente 27015 o superior — no el puerto de juego 7777."
     override val favAnalyze = "Detectar servidores"
     override fun favDetected(n: Int) = if (n == 1) "1 servidor detectado" else "$n servidores detectados"
     override fun favIgnoredLines(n: Int) = if (n == 1) "1 línea sin servidor reconocible" else "$n líneas sin servidor reconocible"
@@ -118,7 +133,14 @@ object EsStrings : Strings {
     override val favCurrentTitle = "Favoritos actuales"
     override val favRefresh = "Actualizar"
     override val favRemove = "Eliminar"
-    override val favEmpty = "No hay favoritos guardados."
+    override val favConnect = "Conectar"
+    override val favConnectLaunched = "Abriendo Steam para conectar al servidor…"
+    override val favConnectFailed = "No se ha podido lanzar Steam. Revisa la carpeta de Steam en Ajustes."
+    override fun favSaveNames(n: Int) =
+        if (n == 1) "Guardar 1 nombre en Steam" else "Guardar $n nombres en Steam"
+    override fun favNamesSaved(n: Int) =
+        if (n == 1) "1 nombre guardado en favoritos." else "$n nombres guardados en favoritos."
+    override val favEmpty = "Aquí aparecerán tus servidores favoritos de Steam. Pega la lista de la comunidad a la izquierda para añadirlos."
     override val favNoAccount = "No se ha podido determinar la cuenta de Steam. Revísala en Ajustes."
     override val favSelectAll = "Seleccionar todo"
     override fun favRemoveSelected(n: Int) = "Eliminar seleccionados ($n)"
@@ -148,7 +170,7 @@ object EsStrings : Strings {
     override val profNamePlaceholder = "Nombre del perfil"
     override val profSave = "Guardar"
     override val profListTitle = "Perfiles guardados"
-    override val profEmpty = "No hay perfiles todavía. Guarda el actual, crea uno nuevo o importa un archivo."
+    override val profEmpty = "Aquí aparecerán tus perfiles del INI. ¿Te han pasado un archivo .ini? Pulsa \"Importar archivo…\"."
     override val profApply = "Aplicar"
     override val profReapply = "Reaplicar"
     override val profDelete = "Eliminar"
@@ -160,8 +182,6 @@ object EsStrings : Strings {
     override val profDeleteConfirmTitle = "Eliminar perfil"
     override fun profDeleteConfirmBody(name: String) = "¿Eliminar el perfil \"$name\"? Esta acción no se puede deshacer."
     override val profArkRunning = "ARK está en ejecución. Ciérralo antes de aplicar un perfil (el juego sobrescribe sus ini al salir)."
-    override val profIntegrityWarning =
-        "Steam restaura BaseDeviceProfiles.ini al verificar archivos o al actualizar el juego. Después de eso, pulsa \"Reaplicar\" en tu perfil activo."
     override fun profAppliedOk(name: String) = "Perfil \"$name\" aplicado. Copia de seguridad creada."
     override fun profSavedOk(name: String) = "Perfil \"$name\" guardado."
     override fun profDeletedOk(name: String) = "Perfil \"$name\" eliminado."
@@ -188,10 +208,24 @@ object EsStrings : Strings {
     override val setArkFolderHelp = "La carpeta de instalación de ARK (la que contiene \"ShooterGame\")."
     override val firstRunTitle = "Configuración inicial"
     override val firstRunBody = "No se ha podido localizar la instalación de ARK automáticamente. Selecciona la carpeta manualmente."
+    override val setShowSetupAgain = "Volver a mostrar la guía"
+    override val setShowSetupAgainHelp =
+        "La guía de puesta a punto (servidores en favoritos + perfil INI) solo se muestra la primera vez. Desde aquí puedes volver a activarla."
+    override val setWindowTitle = "Ventana"
+    override val setWindowHelp =
+        "La app recuerda el tamaño de la ventana (y si está maximizada) tal y como la dejes, y se abrirá siempre igual. El restablecimiento se aplica al volver a abrirla."
+    override val setWindowReset = "Restablecer tamaño por defecto"
 
     override fun updateAvailable(version: String) = "Nueva versión $version disponible."
     override val updateInstall = "Descargar e instalar"
     override val updateDownloading = "Descargando…"
+
+    override val setupTitle = "Puesta a punto"
+    override val setupStepFavorites = "Servidores en favoritos"
+    override val setupStepProfile = "Perfil INI aplicado"
+    override val setupGoFavorites = "Ir a Favoritos"
+    override val setupGoProfiles = "Ir a Perfiles INI"
+    override val setupAllDone = "¡Todo listo! Inicia Steam y entra desde Ver → Servidores → Favoritos."
 
     override val cancel = "Cancelar"
     override val ok = "Aceptar"
@@ -207,7 +241,6 @@ object EnStrings : Strings {
 
     override val favPasteTitle = "Add servers"
     override val favPasteHint = "Paste your server list here (messy text is fine: names, commas, Discord lines…)"
-    override val favQueryPortHint = "Use the query port (usually 27015 or higher) — not the game port 7777."
     override val favAnalyze = "Detect servers"
     override fun favDetected(n: Int) = if (n == 1) "1 server detected" else "$n servers detected"
     override fun favIgnoredLines(n: Int) = if (n == 1) "1 line with no recognizable server" else "$n lines with no recognizable server"
@@ -218,7 +251,14 @@ object EnStrings : Strings {
     override val favCurrentTitle = "Current favorites"
     override val favRefresh = "Refresh"
     override val favRemove = "Remove"
-    override val favEmpty = "No favorites saved."
+    override val favConnect = "Connect"
+    override val favConnectLaunched = "Opening Steam to connect to the server…"
+    override val favConnectFailed = "Could not launch Steam. Check the Steam folder in Settings."
+    override fun favSaveNames(n: Int) =
+        if (n == 1) "Save 1 name to Steam" else "Save $n names to Steam"
+    override fun favNamesSaved(n: Int) =
+        if (n == 1) "1 name saved to favorites." else "$n names saved to favorites."
+    override val favEmpty = "Your Steam favorite servers will show up here. Paste the community list on the left to add them."
     override val favNoAccount = "Could not determine the Steam account. Check it in Settings."
     override val favSelectAll = "Select all"
     override fun favRemoveSelected(n: Int) = "Remove selected ($n)"
@@ -248,7 +288,7 @@ object EnStrings : Strings {
     override val profNamePlaceholder = "Profile name"
     override val profSave = "Save"
     override val profListTitle = "Saved profiles"
-    override val profEmpty = "No profiles yet. Save the current one, create a new one or import a file."
+    override val profEmpty = "Your INI profiles will show up here. Got a .ini file? Press \"Import file…\"."
     override val profApply = "Apply"
     override val profReapply = "Reapply"
     override val profDelete = "Delete"
@@ -260,8 +300,6 @@ object EnStrings : Strings {
     override val profDeleteConfirmTitle = "Delete profile"
     override fun profDeleteConfirmBody(name: String) = "Delete profile \"$name\"? This cannot be undone."
     override val profArkRunning = "ARK is running. Close it before applying a profile (the game rewrites its ini files on exit)."
-    override val profIntegrityWarning =
-        "Steam restores BaseDeviceProfiles.ini when verifying files or updating the game. After that, press \"Reapply\" on your active profile."
     override fun profAppliedOk(name: String) = "Profile \"$name\" applied. Backup created."
     override fun profSavedOk(name: String) = "Profile \"$name\" saved."
     override fun profDeletedOk(name: String) = "Profile \"$name\" deleted."
@@ -288,10 +326,24 @@ object EnStrings : Strings {
     override val setArkFolderHelp = "The ARK install folder (the one containing \"ShooterGame\")."
     override val firstRunTitle = "Initial setup"
     override val firstRunBody = "The ARK installation could not be located automatically. Select the folder manually."
+    override val setShowSetupAgain = "Show the guide again"
+    override val setShowSetupAgainHelp =
+        "The setup guide (servers in favorites + INI profile) only shows the first time. You can bring it back from here."
+    override val setWindowTitle = "Window"
+    override val setWindowHelp =
+        "The app remembers the window size (and whether it is maximized) exactly as you leave it, and always reopens the same way. The reset applies the next time you open it."
+    override val setWindowReset = "Reset to default size"
 
     override fun updateAvailable(version: String) = "New version $version available."
     override val updateInstall = "Download and install"
     override val updateDownloading = "Downloading…"
+
+    override val setupTitle = "Getting set up"
+    override val setupStepFavorites = "Servers in favorites"
+    override val setupStepProfile = "INI profile applied"
+    override val setupGoFavorites = "Go to Favorites"
+    override val setupGoProfiles = "Go to INI Profiles"
+    override val setupAllDone = "All set! Start Steam and join from View → Game Servers → Favorites."
 
     override val cancel = "Cancel"
     override val ok = "OK"

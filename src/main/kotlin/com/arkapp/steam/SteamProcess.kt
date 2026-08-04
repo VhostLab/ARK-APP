@@ -1,6 +1,7 @@
 package com.arkapp.steam
 
 import kotlinx.coroutines.delay
+import java.nio.file.Files
 import java.nio.file.Path
 import kotlin.time.Duration
 import kotlin.time.Duration.Companion.seconds
@@ -20,6 +21,21 @@ object SteamProcess {
     fun requestSteamShutdown(steamRoot: Path) {
         ProcessBuilder(steamRoot.resolve("steam.exe").toString(), "-shutdown").start()
     }
+
+    /**
+     * Connects to a server via steam://connect (address uses the query port).
+     * Steam starts itself if it is not running and launches ARK joining the server.
+     */
+    fun launchConnect(steamRoot: Path?, address: String): Boolean = runCatching {
+        val uri = "steam://connect/$address"
+        val exe = steamRoot?.resolve("steam.exe")
+        if (exe != null && Files.isRegularFile(exe)) {
+            ProcessBuilder(exe.toString(), uri).start()
+        } else {
+            ProcessBuilder("cmd", "/c", "start", "", uri).start()
+        }
+        true
+    }.getOrDefault(false)
 
     suspend fun awaitSteamExit(timeout: Duration = 30.seconds): Boolean {
         val deadline = System.nanoTime() + timeout.inWholeNanoseconds
