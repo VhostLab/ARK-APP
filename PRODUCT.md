@@ -42,7 +42,7 @@ En lugar de tutoriales de Discord con pasos manuales (editar VDF/INI a mano, pue
 - Nombre: **Prodigiosos App** (renombrada desde "ARK-APP" en v1.0.5; el repo conserva el nombre antiguo).
 - Icono existente: `packaging/icon.ico` / `src/main/resources/icon.png`.
 - Vendor: Aimar.
-- **Paleta (compromiso, 2026-07-30):** oscuro neutro premium con un único acento, el cian de marca `#4DD0E1`. El usuario rechazó explícitamente mundos visuales expresivos de color (se construyó y descartó un tema cobalto/rosa); el listón es la sobriedad y acabado de Discord / Steam nuevo. Futuro trabajo visual: refinar dentro de esta paleta, no reemplazarla.
+- **Diseño visual (compromiso, 2026-08-04):** el propietario diseñó la interfaz él mismo en Claude Design («Prodigiosos App v2», sistema Nocturne) y ese mock es la autoridad. Grafitos neutros (#1b1d21 ventana / #17181c barra lateral / #212429 tarjetas), bordes finos blanco-alfa, navegación en barra lateral, y **acento elegible por el usuario** en Ajustes (morado por defecto, azul, verde, amarillo, rojo). Historia previa: se construyó y descartó un tema cobalto/rosa (2026-07-30) y un tema cian sobrio intermedio. Futuro trabajo visual: refinar dentro del sistema Nocturne, no reemplazarlo.
 
 ## Evidence on Hand
 

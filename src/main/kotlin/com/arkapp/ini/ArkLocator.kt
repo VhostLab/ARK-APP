@@ -39,4 +39,12 @@ class ArkLocator(private val steam: SteamLocator, private val settings: Settings
 
     fun baseDeviceProfiles(): Path? =
         arkRoot()?.resolve("Engine/Config/BaseDeviceProfiles.ini")
+
+    /** Per-user game config folder (graphics, keybindings…). */
+    private fun userConfigDir(): Path? =
+        arkRoot()?.resolve("ShooterGame/Saved/Config/WindowsNoEditor")
+
+    fun gameUserSettings(): Path? = userConfigDir()?.resolve("GameUserSettings.ini")
+
+    fun inputIni(): Path? = userConfigDir()?.resolve("Input.ini")
 }

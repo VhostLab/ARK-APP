@@ -11,11 +11,14 @@ Desde la v1.0.7 la app comprueba actualizaciones al arrancar y ofrece instalarla
 
 ## Funciones / Features
 
-- **Favoritos de Steam**: pega una lista de servidores (aunque esté desordenada: nombres, comas, listas de Discord…), revisa la vista previa y añádelos a los favoritos del navegador de servidores de Steam para que aparezcan en el filtro "Favoritos" de ARK.
-  *Steam Favorites: paste a messy server list, review the preview and add them to Steam's server browser favorites so they show up in ARK's "Favorites" filter.*
-- **Perfiles INI**: guarda varias versiones de `BaseDeviceProfiles.ini` y alterna entre ellas con copia de seguridad automática. Puedes guardar el archivo actual del juego, importar un archivo descargado (con cualquier nombre) o crear/editar perfiles en un editor de texto integrado — al aplicar, siempre se copia al juego como `BaseDeviceProfiles.ini`.
-  *INI Profiles: store multiple versions of `BaseDeviceProfiles.ini` and switch between them with automatic backups. Snapshot the game's current file, import a downloaded file (any name) or create/edit profiles in a built-in text editor — on apply it is always copied to the game as `BaseDeviceProfiles.ini`.*
-- UI en español e inglés. / *Spanish and English UI.*
+- **Favoritos de Steam**: pega una lista de servidores en cualquier formato (Discord, tablas web con el nombre encima de la IP…), revisa la vista previa y añádelos a los favoritos de Steam. Nombres reales consultados a cada servidor (A2S), botón ▶ Conectar que lanza ARK contra el servidor, y estrella para fijar tus mapas arriba.
+  *Steam Favorites: paste a server list in any format, review, and add to Steam favorites. Real names queried per server (A2S), a ▶ Connect button that launches ARK, and a star to pin your maps to the top.*
+- **Perfiles INI**: versiones con nombre de `BaseDeviceProfiles.ini` con copia de seguridad automática al aplicar; captura el del juego, importa o edita en el editor integrado. Incluye 3 perfiles de la comunidad de serie.
+  *INI Profiles: named versions of `BaseDeviceProfiles.ini` with automatic backups on apply; snapshot, import or edit in the built-in editor. Ships with 3 community profiles.*
+- **Config del juego**: perfiles de `GameUserSettings.ini` (visual) e `Input.ini` (teclas) para guardar y compartir tu configuración completa.
+  *Game config: profiles of `GameUserSettings.ini` (visuals) and `Input.ini` (keybindings).*
+- **Actualizaciones automáticas** desde GitHub Releases, bandeja del sistema, acento de color elegible y UI en español e inglés.
+  *Auto-updates from GitHub Releases, system tray, selectable accent color, Spanish and English UI.*
 
 ## Notas importantes / Important notes
 

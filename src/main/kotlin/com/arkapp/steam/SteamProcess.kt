@@ -22,6 +22,11 @@ object SteamProcess {
         ProcessBuilder(steamRoot.resolve("steam.exe").toString(), "-shutdown").start()
     }
 
+    /** Reopens Steam after the app closed it to write favorites. */
+    fun launchSteam(steamRoot: Path) {
+        runCatching { ProcessBuilder(steamRoot.resolve("steam.exe").toString()).start() }
+    }
+
     /**
      * Connects to a server via steam://connect (address uses the query port).
      * Steam starts itself if it is not running and launches ARK joining the server.

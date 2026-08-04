@@ -1,7 +1,5 @@
 package com.arkapp.ini
 
-import com.arkapp.storage.AppPaths
-import com.arkapp.storage.SettingsStore
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.Json
 import java.io.IOException
@@ -18,19 +16,21 @@ import kotlin.io.path.listDirectoryEntries
 import kotlin.streams.toList
 
 /**
- * Named profiles of the game's BaseDeviceProfiles.ini. Whatever the source
- * (game snapshot, imported file, in-app editor), the stored file is always
- * named BaseDeviceProfiles.ini and apply() copies it into Engine\Config.
+ * Named profiles of one of the game's ini files (BaseDeviceProfiles,
+ * GameUserSettings, Input…). Whatever the source (game snapshot, imported
+ * file, in-app editor), the stored copy always uses the game's file name and
+ * apply() copies it over the game's file after backing the original up.
  */
 class ProfileRepository(
-    private val paths: AppPaths,
-    private val ark: ArkLocator,
-    private val settings: SettingsStore,
+    private val profilesDir: Path,
+    private val backupsDir: Path,
+    private val fileName: String,
+    private val gameFileProvider: () -> Path?,
+    private val activeId: () -> String?,
+    private val setActiveId: (String?) -> Unit,
 ) {
 
     companion object {
-        const val FILE_NAME = "BaseDeviceProfiles.ini"
-
         /** ini files in the wild are usually UTF-8/ASCII, but ANSI ones exist. */
         fun readTextLenient(file: Path): String = try {
             Files.readString(file)
@@ -47,7 +47,7 @@ class ProfileRepository(
     private val json = Json { prettyPrint = true; ignoreUnknownKeys = true }
 
     fun list(): List<ProfileMeta> = runCatching {
-        paths.profiles.listDirectoryEntries()
+        profilesDir.listDirectoryEntries()
             .filter { Files.isDirectory(it) }
             .mapNotNull { dir ->
                 runCatching {
@@ -59,58 +59,58 @@ class ProfileRepository(
 
     fun saveCurrentAs(name: String): ProfileMeta {
         val source = gameFile()
-        return newProfile(name) { dir -> Files.copy(source, dir.resolve(FILE_NAME)) }
+        return newProfile(name) { dir -> Files.copy(source, dir.resolve(fileName)) }
     }
 
     fun createProfile(name: String, content: String): ProfileMeta =
-        newProfile(name) { dir -> Files.writeString(dir.resolve(FILE_NAME), content) }
+        newProfile(name) { dir -> Files.writeString(dir.resolve(fileName), content) }
 
     /** Byte-exact copy of any external file into the app's folder; the source is never touched. */
     fun importFile(name: String, source: Path): ProfileMeta =
-        newProfile(name) { dir -> Files.copy(source, dir.resolve(FILE_NAME)) }
+        newProfile(name) { dir -> Files.copy(source, dir.resolve(fileName)) }
 
     fun readContent(profile: ProfileMeta): String =
-        readTextLenient(paths.profiles.resolve(profile.id).resolve(FILE_NAME))
+        readTextLenient(profilesDir.resolve(profile.id).resolve(fileName))
 
     fun updateProfile(profile: ProfileMeta, name: String, content: String) {
-        val dir = paths.profiles.resolve(profile.id)
-        Files.writeString(dir.resolve(FILE_NAME), content)
+        val dir = profilesDir.resolve(profile.id)
+        Files.writeString(dir.resolve(fileName), content)
         writeMeta(dir, profile.copy(name = name))
     }
 
-    /** Overwrites the game's BaseDeviceProfiles.ini with the profile's copy, backing up first. */
+    /** Overwrites the game's target ini with the profile's copy, backing up first. */
     fun apply(profile: ProfileMeta) {
         val target = gameFile()
-        val backupDir = paths.backups.resolve(
+        val backupDir = backupsDir.resolve(
             LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyyMMdd-HHmmss"))
         )
         Files.createDirectories(backupDir)
-        Files.copy(target, backupDir.resolve(FILE_NAME), StandardCopyOption.REPLACE_EXISTING)
+        Files.copy(target, backupDir.resolve(fileName), StandardCopyOption.REPLACE_EXISTING)
         Files.copy(
-            paths.profiles.resolve(profile.id).resolve(FILE_NAME),
+            profilesDir.resolve(profile.id).resolve(fileName),
             target,
             StandardCopyOption.REPLACE_EXISTING,
         )
-        settings.update { it.copy(activeProfileId = profile.id) }
+        setActiveId(profile.id)
     }
 
     fun delete(profile: ProfileMeta) {
-        val dir = paths.profiles.resolve(profile.id)
+        val dir = profilesDir.resolve(profile.id)
         if (Files.isDirectory(dir)) {
             Files.walk(dir).use { stream ->
                 stream.sorted(Comparator.reverseOrder()).toList().forEach(Files::deleteIfExists)
             }
         }
-        if (settings.value.activeProfileId == profile.id) {
-            settings.update { it.copy(activeProfileId = null) }
+        if (activeId() == profile.id) {
+            setActiveId(null)
         }
     }
 
     /** State of the profile last applied, comparing the game file against the stored copy. */
     fun activeState(): Pair<ProfileMeta, ActiveState>? {
-        val activeId = settings.value.activeProfileId ?: return null
+        val activeId = activeId() ?: return null
         val meta = list().firstOrNull { it.id == activeId } ?: return null
-        val stored = paths.profiles.resolve(activeId).resolve(FILE_NAME)
+        val stored = profilesDir.resolve(activeId).resolve(fileName)
         val game = runCatching { gameFile() }.getOrNull()
             ?: return meta to ActiveState.MODIFIED
         val identical = Files.isRegularFile(stored) && sha256(game).contentEquals(sha256(stored))
@@ -120,24 +120,24 @@ class ProfileRepository(
     /** Restores the most recent backup created by [apply]. Returns false if none exist. */
     fun restoreLastBackup(): Boolean {
         val latest = runCatching {
-            paths.backups.listDirectoryEntries().filter { Files.isDirectory(it) }.maxByOrNull { it.fileName.toString() }
+            backupsDir.listDirectoryEntries().filter { Files.isDirectory(it) }.maxByOrNull { it.fileName.toString() }
         }.getOrNull() ?: return false
-        val source = latest.resolve(FILE_NAME)
+        val source = latest.resolve(fileName)
         if (!Files.isRegularFile(source)) return false
         Files.copy(source, gameFile(), StandardCopyOption.REPLACE_EXISTING)
         return true
     }
 
-    /** The game's BaseDeviceProfiles.ini; throws if ARK or the file is missing. */
+    /** The game's target ini; throws if ARK or the file is missing. */
     private fun gameFile(): Path {
-        val bdp = ark.baseDeviceProfiles() ?: throw IOException("ARK_NOT_FOUND")
-        if (!Files.isRegularFile(bdp)) throw IOException("INI_NOT_FOUND")
-        return bdp
+        val target = gameFileProvider() ?: throw IOException("ARK_NOT_FOUND")
+        if (!Files.isRegularFile(target)) throw IOException("INI_NOT_FOUND")
+        return target
     }
 
     private fun newProfile(name: String, writeFile: (Path) -> Unit): ProfileMeta {
         val id = UUID.randomUUID().toString()
-        val dir = paths.profiles.resolve(id)
+        val dir = profilesDir.resolve(id)
         Files.createDirectories(dir)
         writeFile(dir)
         val meta = ProfileMeta(id, name, System.currentTimeMillis())

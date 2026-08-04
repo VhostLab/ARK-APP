@@ -1,11 +1,13 @@
 package com.arkapp.ui
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -13,23 +15,21 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.List
+import androidx.compose.material.icons.filled.ArrowDropDown
+import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.filled.Close
-import androidx.compose.material.icons.filled.Settings
-import androidx.compose.material.icons.filled.Star
-import androidx.compose.material3.Button
+import androidx.compose.material3.DropdownMenu
+import androidx.compose.material3.DropdownMenuItem
+import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
-import androidx.compose.material3.Tab
-import androidx.compose.material3.TabRow
-import androidx.compose.material3.TabRowDefaults.tabIndicatorOffset
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
-import androidx.compose.material3.Typography
 import androidx.compose.material3.darkColorScheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
@@ -43,10 +43,11 @@ import androidx.compose.runtime.setValue
 import androidx.compose.runtime.withFrameNanos
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.arkapp.AppState
@@ -62,57 +63,35 @@ import kotlinx.coroutines.withContext
 import java.util.Locale
 import kotlin.system.exitProcess
 
-/*
-DIRECTION CONTRACT (impeccable, revised: user took the standing exit)
-THESIS: The category standard executed impeccably — a sober premium dark
-utility at Discord/new-Steam craft level. The cyclorama-dawn world (seed
-dc4bfb92) was built, reviewed (ship) and rejected by the user on color.
-OWN-WORLD: Neutral near-black ladder #0E1013 / #15181D / #1D2127; ONE accent,
-the brand cyan #4DD0E1; success green #66BB6A; error #FF6E6E. Flat ground,
-matte 8dp panels, 6dp band buttons in tracked caps, cue titles over a cyan
-fading rule, mono for every address.
-STORY / FIRST VIEWPORT: unchanged from the layout + onboarding work.
-FORM: canon (standing exit); recorded as a brand commitment in PRODUCT.md.
-FINISH: DESIGN.md records this palette, not the rejected world.
-*/
-private val AppColors = darkColorScheme(
-    primary = Color(0xFF4DD0E1),        // brand cyan, the single accent
-    onPrimary = Color(0xFF00363D),
-    secondary = Color(0xFFFFB74D),      // hint banners
-    onSecondary = Color(0xFF3E2E00),
-    tertiary = Color(0xFF9AE3EE),
-    background = Color(0xFF0E1013),
-    onBackground = Color(0xFFE2E5E9),
-    surface = Color(0xFF15181D),
-    onSurface = Color(0xFFE2E5E9),
-    surfaceVariant = Color(0xFF1D2127),
-    onSurfaceVariant = Color(0xFFA6ADB8),
-    outline = Color(0xFF2A2F36),
-    error = Color(0xFFFF6E6E),
-    onError = Color(0xFF3D0000),
-)
-
-private val CueTypography = Typography().let { t ->
-    t.copy(
-        titleMedium = t.titleMedium.copy(fontWeight = FontWeight.SemiBold, letterSpacing = 1.6.sp),
-        titleSmall = t.titleSmall.copy(fontWeight = FontWeight.SemiBold, letterSpacing = 1.2.sp),
-        labelLarge = t.labelLarge.copy(letterSpacing = 1.2.sp),
-        labelMedium = t.labelMedium.copy(letterSpacing = 1.0.sp),
-    )
-}
-
 fun systemLanguage(): String = if (Locale.getDefault().language == "es") "es" else "en"
 
 @Composable
 fun App(state: AppState) {
     val settings by state.settings.state.collectAsState()
     val strings: Strings = if ((settings.language ?: systemLanguage()) == "es") EsStrings else EnStrings
+    val accent = Accents.byKey(settings.accentColor)
+
+    val colorScheme = darkColorScheme(
+        primary = accent.base,
+        onPrimary = Palette.OnAccent,
+        secondary = Palette.Warn,
+        onSecondary = Palette.OnAccent,
+        background = Palette.Bg,
+        onBackground = Palette.Text,
+        surface = Palette.Card,
+        onSurface = Palette.Text,
+        surfaceVariant = Palette.Field,
+        onSurfaceVariant = Palette.Muted,
+        outline = Palette.Border14,
+        error = Palette.Danger,
+        onError = Color.White,
+    )
 
     val arkDetectedAtStart = remember { state.arkLocator.arkRoot() != null }
     var selectedTab by remember {
         // ARKAPP_TAB overrides the initial tab (dev/testing aid)
-        val initial = System.getenv("ARKAPP_TAB")?.toIntOrNull()?.coerceIn(0, 2)
-        mutableStateOf(initial ?: if (arkDetectedAtStart) 0 else 2)
+        val initial = System.getenv("ARKAPP_TAB")?.toIntOrNull()?.coerceIn(0, 3)
+        mutableStateOf(initial ?: if (arkDetectedAtStart) 0 else 3)
     }
 
     val scope = rememberCoroutineScope()
@@ -150,14 +129,16 @@ fun App(state: AppState) {
     val setupProfDone by state.setupProfileDone.collectAsState()
     var setupShown by remember { mutableStateOf<Boolean?>(null) }
     LaunchedEffect(Unit) {
-        withContext(Dispatchers.IO) { state.refreshSetupState() }
+        withContext(Dispatchers.IO) {
+            state.seedDefaultProfiles()
+            state.refreshSetupState()
+        }
     }
     LaunchedEffect(settings.setupDismissed, setupFavDone, setupProfDone) {
         val fav = setupFavDone ?: return@LaunchedEffect
         val prof = setupProfDone ?: return@LaunchedEffect
         if (!settings.setupDismissed) {
             if (setupShown == null && fav && prof) {
-                // Everything was already set up before ever seeing the guide: mark seen silently.
                 state.settings.update { it.copy(setupDismissed = true) }
             } else {
                 setupShown = true
@@ -168,10 +149,17 @@ fun App(state: AppState) {
         }
     }
 
-    CompositionLocalProvider(LocalStrings provides strings) {
-        MaterialTheme(colorScheme = AppColors, typography = CueTypography) {
-            Surface(Modifier.fillMaxSize(), color = MaterialTheme.colorScheme.background) {
-                val probeInput = if (System.getenv("ARKAPP_FPS") != null) {
+    CompositionLocalProvider(LocalStrings provides strings, LocalAccent provides accent) {
+        MaterialTheme(colorScheme = colorScheme) {
+            Surface(Modifier.fillMaxSize(), color = Palette.Bg) {
+                if (probeOn) {
+                    Box(
+                        Modifier.fillMaxSize().background(
+                            Color(red = (probeTick % 256) / 255f, green = 0f, blue = 0f, alpha = 0.02f)
+                        )
+                    )
+                }
+                val probeInput = if (probeOn) {
                     Modifier.pointerInput(Unit) {
                         var count = 0
                         var last = 0L
@@ -190,98 +178,50 @@ fun App(state: AppState) {
                         }
                     }
                 } else Modifier
-                if (probeOn) {
-                    // Full-surface invalidation: a near-invisible wash whose color changes every frame.
-                    Box(
-                        Modifier.fillMaxSize().background(
-                            Color(red = (probeTick % 256) / 255f, green = 0f, blue = 0f, alpha = 0.02f)
-                        )
-                    )
-                }
-                Column(Modifier.fillMaxSize().then(probeInput)) {
-                    Row(
-                        Modifier.fillMaxWidth().padding(horizontal = 20.dp, vertical = 14.dp),
-                        verticalAlignment = Alignment.CenterVertically,
+                Row(Modifier.fillMaxSize().then(probeInput)) {
+                    Sidebar(state, selectedTab, onSelectTab = { selectedTab = it })
+                    Column(
+                        Modifier.weight(1f).fillMaxHeight().padding(horizontal = 26.dp, vertical = 22.dp),
+                        verticalArrangement = Arrangement.spacedBy(14.dp),
                     ) {
-                        Text(
-                            strings.appTitle,
-                            style = MaterialTheme.typography.titleLarge.copy(letterSpacing = 2.4.sp),
-                            fontWeight = FontWeight.Bold,
-                            color = MaterialTheme.colorScheme.onBackground,
-                        )
-                        Spacer(Modifier.width(12.dp))
-                        Text(
-                            "ARK: Survival Evolved",
-                            style = MaterialTheme.typography.bodySmall,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        )
-                    }
-                    update?.let { info ->
-                        Surface(color = MaterialTheme.colorScheme.primary.copy(alpha = 0.12f)) {
-                            Row(
-                                Modifier.fillMaxWidth().padding(horizontal = 20.dp, vertical = 6.dp),
-                                verticalAlignment = Alignment.CenterVertically,
-                            ) {
-                                Text(
-                                    strings.updateAvailable(info.version),
-                                    style = MaterialTheme.typography.bodyMedium,
-                                    modifier = Modifier.weight(1f),
-                                )
-                                Button(
-                                    enabled = !updating,
-                                    shape = ButtonShape,
-                                    onClick = {
-                                        updating = true
-                                        scope.launch {
-                                            val launched = withContext(Dispatchers.IO) {
-                                                UpdateChecker.downloadAndLaunchInstaller(info)
-                                            }
-                                            if (launched) {
-                                                exitProcess(0)
-                                            } else {
-                                                UpdateChecker.openReleasesPage()
-                                                updating = false
-                                            }
+                        update?.let { info ->
+                            UpdateBanner(
+                                info = info,
+                                updating = updating,
+                                onInstall = {
+                                    updating = true
+                                    scope.launch {
+                                        val launched = withContext(Dispatchers.IO) {
+                                            UpdateChecker.downloadAndLaunchInstaller(info)
                                         }
-                                    },
-                                ) {
-                                    Text(if (updating) strings.updateDownloading else strings.updateInstall)
-                                }
-                                IconButton(enabled = !updating, onClick = { update = null }) {
-                                    Icon(Icons.Default.Close, contentDescription = null, modifier = Modifier.size(16.dp))
-                                }
+                                        if (launched) {
+                                            exitProcess(0)
+                                        } else {
+                                            UpdateChecker.openReleasesPage()
+                                            updating = false
+                                        }
+                                    }
+                                },
+                                onDismiss = { update = null },
+                            )
+                        }
+                        if (setupShown == true) {
+                            SetupStrip(
+                                favoritesDone = setupFavDone == true,
+                                profileDone = setupProfDone == true,
+                                selectedTab = selectedTab,
+                                onSelectTab = { selectedTab = it },
+                                onDismiss = { setupShown = false },
+                            )
+                        }
+                        Box(Modifier.weight(1f)) {
+                            when (selectedTab) {
+                                0 -> FavoritesTab(state)
+                                1 -> ProfilesTab(state)
+                                2 -> GameConfigTab(state)
+                                else -> SettingsTab(state)
                             }
                         }
-                    }
-                    TabRow(
-                        selectedTabIndex = selectedTab,
-                        containerColor = Color.Transparent,
-                        indicator = { tabPositions ->
-                            Box(
-                                Modifier
-                                    .tabIndicatorOffset(tabPositions[selectedTab])
-                                    .height(2.dp)
-                                    .background(HorizonRule)
-                            )
-                        },
-                    ) {
-                        AppTab(strings.tabFavorites, Icons.Default.Star, selectedTab == 0) { selectedTab = 0 }
-                        AppTab(strings.tabProfiles, Icons.AutoMirrored.Filled.List, selectedTab == 1) { selectedTab = 1 }
-                        AppTab(strings.tabSettings, Icons.Default.Settings, selectedTab == 2) { selectedTab = 2 }
-                    }
-                    if (setupShown == true) {
-                        SetupStrip(
-                            favoritesDone = setupFavDone == true,
-                            profileDone = setupProfDone == true,
-                            selectedTab = selectedTab,
-                            onSelectTab = { selectedTab = it },
-                            onDismiss = { setupShown = false },
-                        )
-                    }
-                    when (selectedTab) {
-                        0 -> FavoritesTab(state)
-                        1 -> ProfilesTab(state)
-                        else -> SettingsTab(state)
                     }
                 }
             }
@@ -290,18 +230,147 @@ fun App(state: AppState) {
 }
 
 @Composable
-private fun AppTab(label: String, icon: ImageVector, selected: Boolean, onClick: () -> Unit) {
-    Tab(
-        selected = selected,
-        onClick = onClick,
-        text = {
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                Icon(icon, contentDescription = null, modifier = Modifier.size(16.dp))
-                Spacer(Modifier.width(8.dp))
-                Text(label.uppercase(), style = MaterialTheme.typography.labelMedium)
+private fun Sidebar(state: AppState, selectedTab: Int, onSelectTab: (Int) -> Unit) {
+    val strings = LocalStrings.current
+    val settings by state.settings.state.collectAsState()
+    val accountId = remember(settings) { state.steamLocator.accountId() }
+    val accounts = remember(settings) { state.steamLocator.availableAccountIds() }
+    val accountNames = remember(settings) { state.steamLocator.accountNames() }
+    var accountMenuOpen by remember { mutableStateOf(false) }
+
+    Column(
+        Modifier
+            .width(200.dp)
+            .fillMaxHeight()
+            .background(Palette.Sidebar)
+            .padding(horizontal = 12.dp)
+            .padding(top = 22.dp, bottom = 16.dp),
+        verticalArrangement = Arrangement.spacedBy(2.dp),
+    ) {
+        Column(Modifier.padding(start = 10.dp, end = 10.dp, bottom = 18.dp)) {
+            Text(strings.appTitle, fontSize = 16.sp, fontWeight = FontWeight.SemiBold, color = Palette.Text, lineHeight = 19.sp)
+            Text("ARK: Survival Evolved", fontSize = 11.sp, color = Palette.Muted)
+        }
+        NavItem(strings.tabFavorites, selectedTab == 0) { onSelectTab(0) }
+        NavItem(strings.tabProfiles, selectedTab == 1) { onSelectTab(1) }
+        NavItem(strings.tabGameConfig, selectedTab == 2) { onSelectTab(2) }
+        NavItem(strings.tabSettings, selectedTab == 3) { onSelectTab(3) }
+        Spacer(Modifier.weight(1f))
+
+        val pinned = settings.steamAccountId != null
+        Box {
+            Surface(
+                onClick = { accountMenuOpen = true },
+                shape = ButtonShape,
+                color = Color(0xFF1F2126),
+                border = androidx.compose.foundation.BorderStroke(1.dp, Palette.Border7),
+                modifier = Modifier.fillMaxWidth(),
+            ) {
+                Row(
+                    Modifier.padding(horizontal = 10.dp, vertical = 7.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
+                    Text(
+                        accountId?.let { accountNames[it] ?: it } ?: strings.setNotFound,
+                        fontSize = 12.sp,
+                        color = Palette.Text,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis,
+                        modifier = Modifier.weight(1f),
+                    )
+                    Spacer(Modifier.width(6.dp))
+                    Text(
+                        if (pinned) strings.setAccountPinnedShort else strings.setAccountAutoShort,
+                        fontSize = 9.5.sp,
+                        color = Palette.Dim,
+                    )
+                    Icon(
+                        Icons.Default.ArrowDropDown,
+                        contentDescription = strings.setAccount,
+                        tint = Palette.Muted,
+                        modifier = Modifier.size(16.dp),
+                    )
+                }
             }
-        },
-    )
+            DropdownMenu(expanded = accountMenuOpen, onDismissRequest = { accountMenuOpen = false }) {
+                accounts.forEach { id ->
+                    val name = accountNames[id]
+                    DropdownMenuItem(
+                        text = { Text(if (name != null) "$name · $id" else id, fontSize = 13.sp) },
+                        leadingIcon = {
+                            if (id == accountId) {
+                                Icon(Icons.Default.Check, contentDescription = null, modifier = Modifier.size(16.dp))
+                            }
+                        },
+                        onClick = {
+                            state.settings.update { it.copy(steamAccountId = id) }
+                            accountMenuOpen = false
+                        },
+                    )
+                }
+                HorizontalDivider()
+                DropdownMenuItem(
+                    text = { Text(strings.setAutoDetect, fontSize = 13.sp) },
+                    onClick = {
+                        state.settings.update { it.copy(steamAccountId = null) }
+                        accountMenuOpen = false
+                    },
+                )
+            }
+        }
+    }
+}
+
+@Composable
+private fun NavItem(label: String, selected: Boolean, onClick: () -> Unit) {
+    val accent = LocalAccent.current
+    Surface(
+        onClick = onClick,
+        shape = RoundedCornerShape(5.dp),
+        color = if (selected) accent.base.copy(alpha = 0.14f) else Color.Transparent,
+        modifier = Modifier.fillMaxWidth(),
+    ) {
+        Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.clip(RoundedCornerShape(5.dp))) {
+            Box(
+                Modifier.width(2.dp).height(34.dp)
+                    .background(if (selected) accent.base else Color.Transparent)
+            )
+            Text(
+                label,
+                fontSize = 13.sp,
+                fontWeight = if (selected) FontWeight.SemiBold else FontWeight.Normal,
+                color = if (selected) Palette.Text else Palette.Muted,
+                modifier = Modifier.padding(horizontal = 10.dp, vertical = 8.dp),
+            )
+        }
+    }
+}
+
+@Composable
+private fun UpdateBanner(info: UpdateInfo, updating: Boolean, onInstall: () -> Unit, onDismiss: () -> Unit) {
+    val strings = LocalStrings.current
+    val accent = LocalAccent.current
+    Surface(
+        shape = CardShape,
+        color = accent.base.copy(alpha = 0.1f),
+        border = androidx.compose.foundation.BorderStroke(1.dp, accent.base.copy(alpha = 0.35f)),
+        modifier = Modifier.fillMaxWidth(),
+    ) {
+        Row(
+            Modifier.padding(start = 14.dp, end = 6.dp, top = 6.dp, bottom = 6.dp),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            Text(strings.updateAvailable(info.version), fontSize = 13.sp, color = Palette.Text, modifier = Modifier.weight(1f))
+            PrimaryButton(
+                if (updating) strings.updateDownloading else strings.updateInstall,
+                enabled = !updating,
+                onClick = onInstall,
+            )
+            IconButton(enabled = !updating, onClick = onDismiss) {
+                Icon(Icons.Default.Close, contentDescription = null, tint = Palette.Muted, modifier = Modifier.size(14.dp))
+            }
+        }
+    }
 }
 
 /** First-run checklist driven by real state: favorites present and INI profile applied. */
@@ -314,23 +383,29 @@ private fun SetupStrip(
     onDismiss: () -> Unit,
 ) {
     val strings = LocalStrings.current
-    Surface(color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.55f)) {
+    val accent = LocalAccent.current
+    Surface(
+        shape = CardShape,
+        color = Palette.Card,
+        border = androidx.compose.foundation.BorderStroke(1.dp, Palette.Border7),
+        modifier = Modifier.fillMaxWidth(),
+    ) {
         Row(
-            Modifier.fillMaxWidth().padding(start = 20.dp, end = 8.dp, top = 3.dp, bottom = 3.dp),
+            Modifier.fillMaxWidth().padding(start = 16.dp, end = 6.dp, top = 4.dp, bottom = 4.dp),
             verticalAlignment = Alignment.CenterVertically,
         ) {
             Text(
                 strings.setupTitle,
-                style = MaterialTheme.typography.labelLarge,
+                fontSize = 13.sp,
                 fontWeight = FontWeight.SemiBold,
-                color = MaterialTheme.colorScheme.primary,
+                color = accent.hi,
             )
             Spacer(Modifier.width(20.dp))
             if (favoritesDone && profileDone) {
                 Text(
                     strings.setupAllDone,
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = SuccessGreen,
+                    fontSize = 13.sp,
+                    color = Palette.Success,
                     modifier = Modifier.weight(1f),
                 )
             } else {
@@ -352,7 +427,7 @@ private fun SetupStrip(
                 Spacer(Modifier.weight(1f))
             }
             IconButton(onClick = onDismiss) {
-                Icon(Icons.Default.Close, contentDescription = null, modifier = Modifier.size(14.dp))
+                Icon(Icons.Default.Close, contentDescription = null, tint = Palette.Muted, modifier = Modifier.size(14.dp))
             }
         }
     }
@@ -366,34 +441,31 @@ private fun SetupStep(
     actionLabel: String?,
     onAction: () -> Unit,
 ) {
+    val accent = LocalAccent.current
     Row(verticalAlignment = Alignment.CenterVertically) {
         if (done) {
             Icon(
                 Icons.Default.CheckCircle,
                 contentDescription = null,
-                tint = SuccessGreen,
+                tint = Palette.Success,
                 modifier = Modifier.size(16.dp),
             )
         } else {
             Surface(
                 shape = CircleShape,
-                color = MaterialTheme.colorScheme.primary.copy(alpha = 0.22f),
+                color = accent.base.copy(alpha = 0.22f),
                 modifier = Modifier.size(18.dp),
             ) {
-                Box(contentAlignment = Alignment.Center) {
-                    Text(
-                        "$number",
-                        style = MaterialTheme.typography.labelSmall,
-                        color = MaterialTheme.colorScheme.primary,
-                    )
+                Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                    CircleDigit("$number", fontSize = 10.sp, color = accent.hi)
                 }
             }
         }
         Spacer(Modifier.width(7.dp))
         Text(
             label,
-            style = MaterialTheme.typography.bodySmall,
-            color = if (done) MaterialTheme.colorScheme.onSurfaceVariant else MaterialTheme.colorScheme.onSurface,
+            fontSize = 12.sp,
+            color = if (done) Palette.Muted else Palette.Text,
         )
         if (actionLabel != null) {
             Spacer(Modifier.width(2.dp))
@@ -401,7 +473,7 @@ private fun SetupStep(
                 onClick = onAction,
                 modifier = Modifier.height(28.dp),
                 contentPadding = PaddingValues(horizontal = 8.dp, vertical = 0.dp),
-            ) { Text(actionLabel, style = MaterialTheme.typography.labelMedium) }
+            ) { Text(actionLabel, fontSize = 12.sp, color = accent.hi) }
         }
     }
 }

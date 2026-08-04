@@ -15,10 +15,16 @@ data class AppSettings(
     val arkPath: String? = null,
     val steamAccountId: String? = null,
     val activeProfileId: String? = null,
+    val activeGusProfileId: String? = null,
+    val activeInputProfileId: String? = null,
     val setupDismissed: Boolean = false,
+    val accentColor: String? = null,   // Accents key; null = default (morado)
+    val pinnedServers: List<String> = emptyList(),   // favorite addresses pinned to the top (lowercase)
+    val defaultInisVersion: Int = 0,   // last bundled-profiles set seeded into the profile store
     val windowWidth: Int? = null,
     val windowHeight: Int? = null,
     val windowMaximized: Boolean = false,
+    val windowSizePreset: String? = null,   // null = remember last; "s"|"m"|"l"|"full" = fixed size
 )
 
 class SettingsStore(private val file: Path) {

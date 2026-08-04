@@ -68,20 +68,34 @@ object UpdateChecker {
     }
 
     /**
-     * Downloads the MSI to a temp folder and launches the installer (passive UI).
-     * On success the caller must exit the app so msiexec can replace its files.
+     * Downloads the MSI and hands off to a windowless script (wscript) that runs
+     * the installer (passive UI), waits for it to finish and relaunches the app.
+     * On success the caller must exit so msiexec can replace the files.
      */
     fun downloadAndLaunchInstaller(info: UpdateInfo): Boolean = runCatching {
         val client = HttpClient.newBuilder()
             .connectTimeout(Duration.ofSeconds(10))
             .followRedirects(HttpClient.Redirect.ALWAYS)
             .build()
-        val target = Files.createTempDirectory("prodigiosos-update")
-            .resolve("Prodigiosos App-${info.version}.msi")
+        val dir = Files.createTempDirectory("prodigiosos-update")
+        val target = dir.resolve("Prodigiosos App-${info.version}.msi")
         val request = HttpRequest.newBuilder(URI(info.msiUrl)).build()
         val response = client.send(request, HttpResponse.BodyHandlers.ofFile(target))
         if (response.statusCode() != 200) return false
-        ProcessBuilder("msiexec", "/i", target.toString(), "/passive").start()
+        // Relaunch only when running as the installed exe (not from a dev JVM).
+        val exe = ProcessHandle.current().info().command().orElse("")
+        val relaunch =
+            if (exe.endsWith("Prodigiosos App.exe", ignoreCase = true)) {
+                "sh.Run \"\"\"$exe\"\"\", 1, False\r\n"
+            } else ""
+        val script = dir.resolve("update.vbs")
+        Files.writeString(
+            script,
+            "Set sh = CreateObject(\"WScript.Shell\")\r\n" +
+                "sh.Run \"msiexec /i \"\"$target\"\" /passive\", 1, True\r\n" +
+                relaunch,
+        )
+        ProcessBuilder("wscript", script.toString()).start()
         true
     }.getOrDefault(false)
 

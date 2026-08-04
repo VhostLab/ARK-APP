@@ -1,139 +1,89 @@
 ---
 name: Prodigiosos App
-description: Utilidad de escritorio oscura, sobria y premium (listón Discord/Steam nuevo) — negro neutro, un único acento cian, bandas rectangulares y títulos con tracking.
+description: Sistema Nocturne diseñado por el propietario en Claude Design («Prodigiosos App v2») — grafitos neutros, barra lateral, acento elegible por el usuario, asistentes paso a paso.
 colors:
-  accent-cyan: "#4DD0E1"
-  on-accent: "#00363D"
-  hint-amber: "#FFB74D"
-  ground: "#0E1013"
-  panel: "#15181D"
-  inset-panel: "#1D2127"
-  text: "#E2E5E9"
-  muted-text: "#A6ADB8"
-  outline: "#2A2F36"
-  success: "#66BB6A"
-  error: "#FF6E6E"
-  on-error: "#3D0000"
-  disabled-text: "#6A7178"
+  bg: "#1B1D21"
+  sidebar: "#17181C"
+  card: "#212429"
+  field: "#16181B"
+  hover: "#2C3038"
+  border-7: "rgba(255,255,255,.07)"
+  border-12: "rgba(255,255,255,.12)"
+  border-14: "rgba(255,255,255,.14)"
+  text: "#E8E9EC"
+  soft: "#B9BEC6"
+  muted: "#8A9099"
+  dim: "#6B7178"
+  success: "#8FBF8F"
+  danger-soft: "#C98A86"
+  danger: "#C4544D"
+  warn: "#D6A45E"
+  on-accent: "#16181B"
+accents:
+  morado: { base: "#968AE0", hi: "#A89DEA", deep: "#6A5FC0" }   # por defecto
+  azul: { base: "#6FA8DC", hi: "#8ABBE6", deep: "#4A7FB0" }
+  verde: { base: "#7FBF8F", hi: "#95CDA3", deep: "#5A9A6C" }
+  amarillo: { base: "#D6B45E", hi: "#E2C67E", deep: "#B08F3C" }
+  rojo: { base: "#D1706A", hi: "#DD8A85", deep: "#AB4F4A" }
 typography:
-  header:
-    fontFamily: "Material3 por defecto (sans del sistema)"
-    fontWeight: 700
-    letterSpacing: "2.4sp"
-  title:
-    fontFamily: "Material3 por defecto (sans del sistema)"
-    fontWeight: 600
-    letterSpacing: "1.2sp–1.6sp"
-  label:
-    fontFamily: "Material3 por defecto (sans del sistema)"
-    letterSpacing: "1.0sp–1.2sp"
-  body:
-    fontFamily: "Material3 por defecto (sans del sistema)"
-  mono:
-    fontFamily: "FontFamily.Monospace"
-    fontSize: "13.sp (editor INI); bodySmall en direcciones y rutas"
+  family: "Sans del sistema (Segoe UI en Windows); FontFamily.Monospace para direcciones, rutas e INI"
+  page-title: "17sp SemiBold"
+  card-title: "15sp SemiBold (+ contador '· N' en 13sp muted)"
+  row-title: "13.5sp"
+  body: "13sp"
+  help: "12.5sp muted, lineHeight 18–20sp"
+  meta: "11.5sp dim"
 rounded:
-  band: "6.dp"
-  panel: "8.dp"
+  button: "6.dp"
+  card: "8.dp"
+  modal: "10.dp"
+  nav-item: "5.dp"
 spacing:
-  xs: "8.dp"
-  sm: "12.dp"
-  md: "16.dp"
-  lg: "20.dp"
-components:
-  button-commit:
-    backgroundColor: "{colors.accent-cyan}"
-    textColor: "{colors.on-accent}"
-    rounded: "{rounded.band}"
-    padding: "20.dp horizontal, 10.dp vertical"
-    note: "HorizonButton — texto en MAYÚSCULAS; una sola por página"
-  button-destructive:
-    backgroundColor: "{colors.error}"
-    textColor: "{colors.on-error}"
-    rounded: "{rounded.band}"
-  section-card:
-    backgroundColor: "{colors.panel}"
-    rounded: "{rounded.panel}"
-    padding: "16.dp"
-  info-banner:
-    backgroundColor: "{colors.hint-amber} al 12% de alfa"
-    textColor: "{colors.text}"
-    rounded: "{rounded.band}"
+  page: "26.dp horizontal, 22.dp vertical; gap 14.dp"
+  card-header: "18.dp horizontal, 13.dp vertical"
+  row: "18.dp horizontal, 8–11.dp vertical"
+  modal: "20.dp"
 ---
 
-# Design System: Prodigiosos App
+# Design System: Prodigiosos App (Nocturne)
 
 ## Overview
 
-**Norte creativo: el estándar de la categoría, ejecutado impecable.** Compromiso de marca registrado en PRODUCT.md (2026-07-30): oscuro neutro premium con **un único acento**, el cian de marca `#4DD0E1`, al nivel de acabado de Discord / Steam nuevo. Se construyó y descartó un mundo expresivo (ciclorama cobalto/rosa, seed dc4bfb92 — ver `.impeccable/approved.json`); el usuario fijó la sobriedad. Futuro trabajo visual: refinar dentro de esta paleta, nunca reemplazarla ni añadir segundos acentos.
+**Autoridad: el mock del propietario** («Prodigiosos App v2.dc.html», Claude Design, 2026-08-04). Este documento registra su traducción a Compose Desktop tal como quedó construida. El acento NO es fijo: el usuario lo elige en Ajustes entre cinco (`AppSettings.accentColor`, morado por defecto) y viaja por `LocalAccent`; ningún componente debe usar un color de acento cableado.
 
-**Key Characteristics:**
-- Fondo plano neutro (#0E1013) sin degradados de página; paneles mate sin sombra.
-- Títulos en MAYÚSCULAS con tracking ("registro de cue") sobre una regla de acento de 2dp.
-- Botones como bandas rectangulares de 6dp, nunca píldoras Material.
-- Direcciones, puertos, rutas e IDs siempre en monoespaciada.
-- Público no técnico hispanohablante: todo texto vía `i18n/Strings.kt` (ES+EN); el color nunca es la única señal.
+**Estructura global:** barra lateral de 200dp (#17181C) con título de la app, tres ítems de navegación y el selector de cuenta de Steam abajo; área de contenido (#1B1D21) con padding 26/22 y gap 14. Sin barra de pestañas superior. Banner de actualización y guía de puesta a punto como tarjetas encima del contenido de la pestaña.
 
-## Colors
+## Componentes (Components.kt)
 
-### Accent (único)
-- **Cian de marca** (#4DD0E1): estructura e interacción. Botón de commit (`HorizonButton`), botones primarios, indicador de pestaña (`HorizonRule`: degradado cian→cian 15% como subrayado), número de paso pendiente, banner de actualización (12% alfa). Texto sobre cian: #00363D.
+- **`AppCard`**: panel #212429, borde 1px blanco 7%, radio 8. Cabecera con `CardTitle` (15sp SemiBold + "· N"). Filas separadas por `HairLine` (1px blanco 5–7%).
+- **Botones** (radio 6, 13sp SemiBold, padding ~16×8): `PrimaryButton` (relleno acento, texto #16181B), `GhostButton` (borde blanco 14%, texto soft), `AccentGhostButton` (borde acento 50%, texto accent.hi), `SuccessGhostButton` (verde, para Conectar), `DangerGhostButton` (borde #C98A86 45%), `DangerButton` (relleno #C4544D, en confirmaciones), `GhostIconButton` (cuadrado 28–29dp con icono 14dp).
+- **`NavItem`** (App.kt): radio 5, seleccionado = fondo acento 14% + barra izquierda de 2dp en acento + texto SemiBold.
+- **`AppTextField`**: fondo #16181B, borde blanco 12% (foco: acento 60%), radio 6; `mono=true` para INI/direcciones.
+- **`StatusMessage`** (toast): tinta acento 10% + borde 35% (error: rojo), descartable; los éxitos se autodescartan a los 5 s.
+- **`WarnBanner`**: ámbar 10% + borde 32%, texto ámbar 12sp.
+- **Modales**: `AppModal` (ancho fijo 420–620dp, radio 10, borde blanco 12%, scrim), `ModalHeader` (título + X), `ConfirmModal` (título/cuerpo/aviso opcional + Cancelar y commit), `WizardSteps` (puntos numerados 22dp unidos por líneas: activo = relleno acento; hecho = acento 18% + borde 50%; pendiente = #2C3038), `DoneCircle` (44dp verde 14% con check).
+- **`ModeCard`** (ProfilesTab): opción de asistente con emoji, título y descripción; seleccionada = borde acento.
 
-### Semánticos
-- **Éxito** (#66BB6A, `SuccessGreen`): completado/válido — checks del cue strip, mensajes de éxito, ruta detectada, cuenta fijada, perfil activo (chip al 18% de alfa).
-- **Aviso** (#FFB74D, secondary): relleno de `InfoBanner` al 12% con icono a tinta plena.
-- **Error** (#FF6E6E): errores y acciones destructivas; texto #3D0000. Siempre con `ConfirmDialog` en lo destructivo.
+## Patrones de pantalla
 
-### Neutrales
-- Fondo #0E1013 → panel #15181D → panel embutido #1D2127 (filas, deshabilitados) → tintes de alfa 12–22%.
-- Texto #E2E5E9; atenuado #A6ADB8; contorno #2A2F36; texto deshabilitado #6A7178.
-
-### Named Rules
-**La regla del acento único.** Un solo color de acento en toda la app. Verde, ámbar y rojo son semánticos, no decorativos. El color nunca es la única señal: siempre acompaña icono o etiqueta.
-
-## Typography
-
-Material3 por defecto (sans del sistema), modificada en `CueTypography`; mono para todo lo que "lee la máquina".
-
-- **Header de app** (titleLarge, Bold, 2.4sp): solo el título en cabecera.
-- **Título de sección** (`CueTitle`: titleSmall SemiBold 1.2sp, MAYÚSCULAS) sobre la regla de acento de 2dp.
-- **Label** (labelLarge 1.2sp / labelMedium 1.0sp): botones (MAYÚSCULAS en `HorizonButton`), pestañas (MAYÚSCULAS + icono 16dp).
-- **Body** (bodyMedium/bodySmall sin modificar): prosa y ayudas.
-- **Mono**: toda dirección `host:puerto`, ruta, ID o el editor INI (13.sp). Si hay nombre amistoso, nombre en sans y dirección debajo en mono atenuado.
-
-## Layout
-
-Ventana única en columna: cabecera (20dp h / 14dp v), banner de actualización opcional, pestañas transparentes, cue strip de primer arranque, contenido con padding 20dp h / 12–20dp v. Favoritos: dos columnas iguales separadas 20dp, sin scroll externo — las listas scrollean dentro de su panel con el botón de acción fijo. Ritmo `spacedBy` 8/12/16dp; interior de panel 16dp.
-
-## Elevation & Depth
-
-Sin sombras. Profundidad tonal: fondo → panel → panel embutido → tintes de alfa. `TabRow` transparente.
-
-## Shapes
-
-Bandas de 6dp (`ButtonShape`) para botones, banners, mensajes y filas; 8dp para paneles (`SectionCard`). Única forma circular: el círculo de 18dp del paso pendiente. Firma geométrica: la regla de acento de 2dp (28dp bajo títulos; ancho de pestaña como indicador).
-
-## Components
-
-- **`HorizonButton` (commit):** banda cian sólida, texto MAYÚSCULAS en #00363D; exactamente una por página (añadir seleccionados, aplicar perfil). Deshabilitado: #1D2127 / #6A7178.
-- **`Button` primario:** cian de esquema + `shape = ButtonShape`. **Destructivo:** containerColor error + onError, tras `ConfirmDialog`. **Secundario:** `OutlinedButton` con `ButtonShape`; terciario `TextButton`.
-- **`SectionCard`:** 8dp, #15181D, sin borde ni sombra, padding 16dp, título vía `CueTitle`.
-- **`OutlinedTextField`:** contorno #2A2F36; mono donde aplica; errores vía `StatusMessage`.
-- **`TabRow`:** transparente; indicador 2dp `HorizonRule`.
-- **`InfoBanner` / `StatusMessage`:** 6dp, tinta al 12–14% + icono 18dp; éxito verde, error rojo.
-- **Cue Strip (`SetupStrip`):** checklist de primer arranque sobre #1D2127 al 55%; pendiente = círculo cian 22% con dígito; completo = check verde 16dp; descartable y persistente.
+- **Cabecera de pestaña**: título 17sp SemiBold a la izquierda; acción primaria "＋ …" a la derecha.
+- **Listas**: dentro de una única `AppCard` a pantalla completa; filas con checkbox/tick + texto de dos líneas (nombre 13.5sp, meta mono 11.5sp) + acciones a la derecha; pie fijo con la acción en masa. Estados vacíos centrados: título 15sp + cuerpo muted + CTA primario.
+- **Asistentes de 3 pasos** (añadir servidores: Pegar→Revisar→Listo; añadir perfil: Origen→Detalles→Listo): siempre en `AppModal` con `WizardSteps`; el paso final muestra `DoneCircle` + resumen + nota.
+- **Confirmaciones**: `ConfirmModal`; lo destructivo usa `DangerButton`; aplicar perfil con ARK abierto muestra `WarnBanner` y deshabilita el commit.
+- **Diálogo de Steam**: cerrar Steam para escribir favoritos y **relanzarlo al terminar** (`SteamProcess.launchSteam`).
 
 ## Do's and Don'ts
 
 ### Do:
-- **Do** mantener un solo acento (cian) y los semánticos solo para su significado.
-- **Do** usar `CueTitle` para todo título de sección y `ButtonShape` para todo botón.
-- **Do** usar mono para toda dirección/puerto/ruta/ID.
-- **Do** pasar todo texto por `i18n/Strings.kt` (ES+EN).
+- **Do** leer el acento de `LocalAccent` y los neutros de `Palette`; nada de hex sueltos en pantallas.
+- **Do** usar los componentes compartidos para todo botón, tarjeta, campo y modal.
+- **Do** mono para direcciones `host:puerto`, rutas e INI.
+- **Do** pasar todo texto por `i18n/Strings.kt` (ES + EN).
+- **Do** flujos nuevos como asistente de 3 pasos si tienen más de un paso.
 
 ### Don't:
-- **Don't** introducir paletas expresivas, segundos acentos ni degradados de página (compromiso de marca).
-- **Don't** añadir sombras/elevación/bordes a paneles; profundidad tonal.
-- **Don't** usar píldoras Material ni radios fuera de 6/8dp.
-- **Don't** animar fondos (rendimiento fijado: estático).
-- **Don't** ejecutar destructivos sin `ConfirmDialog`.
+- **Don't** cablear un color de acento ni añadir acentos fuera de los cinco de `Accents`.
+- **Don't** usar sombras/elevación: la profundidad es tonal + bordes finos.
+- **Don't** usar píldoras Material ni radios fuera de 5/6/8/10dp.
+- **Don't** ejecutar destructivos sin `ConfirmModal`.
+- **Don't** bloquear la UI con avisos permanentes: toasts autodescartables y banners solo cuando aplican.
